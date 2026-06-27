@@ -165,6 +165,7 @@ export default function AdminStudents() {
             {!search && !filterDept && !filterStatus && 'Students will appear here after they register and get approved.'}
           </div>
         ) : (
+          <>
           <table className="tbl">
             <thead>
               <tr><th>Student</th><th>Dept</th><th>Sem</th><th>CGPA</th><th>10th / 12th</th><th>Status</th><th>Package</th></tr>
@@ -231,6 +232,7 @@ export default function AdminStudents() {
               </div>
             </div>
           )}
+          </>
         )}
       </div>
     </>
