@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useCollection, where, orderBy, updateDocument, addDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
+import WhatsAppShare from '../../components/WhatsAppShare'
 import { createUserWithEmailAndPassword, signOut, getAuth } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
@@ -331,6 +332,7 @@ function StudentForm({ student, onBack, onSaved }) {
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [created, setCreated] = useState(null) // { name, email, password, phone } after successful creation
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -382,6 +384,7 @@ function StudentForm({ student, onBack, onSaved }) {
           phone: form.phone,
         })
         toast.success('Student updated')
+        onSaved()
       } else {
         // Create new student — use secondary auth to not lose admin session
         const secAuth = getSecondaryAuth()
@@ -406,10 +409,9 @@ function StudentForm({ student, onBack, onSaved }) {
           createdAt: serverTimestamp(),
         })
 
-        toast.success(`Student created with password: ${form.password}`)
+        // Show WhatsApp share screen instead of going back
+        setCreated({ name: form.displayName, email: form.email, password: form.password, phone: form.phone })
       }
-
-      onSaved()
     } catch (err) {
       const msg = err.message || 'Save failed.'
       if (msg.includes('email-already-in-use')) {
@@ -420,6 +422,24 @@ function StudentForm({ student, onBack, onSaved }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  // Show WhatsApp share screen after successful creation
+  if (created) {
+    return (
+      <>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+          <WhatsAppShare
+            name={created.name}
+            email={created.email}
+            password={created.password}
+            phone={created.phone}
+            role="student"
+            onDone={onSaved}
+          />
+        </div>
+      </>
+    )
   }
 
   return (
