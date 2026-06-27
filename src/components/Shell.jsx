@@ -17,8 +17,12 @@ import HodDashboard from '../pages/hod/Dashboard'
 import HodApprovals from '../pages/hod/Approvals'
 
 import CompanyDashboard from '../pages/company/Dashboard'
+import CompanyJobs from '../pages/company/Jobs'
+import CompanyPipeline from '../pages/company/Pipeline'
 
 import StudentDashboard from '../pages/student/Dashboard'
+import StudentJobs from '../pages/student/Jobs'
+import StudentApplications from '../pages/student/Applications'
 import StudentProfile from '../pages/student/Profile'
 
 /* Stub for screens not yet built */
@@ -113,14 +117,14 @@ const SCREENS = {
   },
   company: {
     dash: CompanyDashboard,
-    jobs: AdminJobs,
-    pipeline: () => <Coming label="Candidate pipeline" />,
+    jobs: CompanyJobs,
+    pipeline: CompanyPipeline,
     profile: () => <Coming label="Company profile" />,
   },
   student: {
     dash: StudentDashboard,
-    jobs: StudentDashboard,
-    applications: () => <Coming label="My applications" />,
+    jobs: StudentJobs,
+    applications: StudentApplications,
     profile: StudentProfile,
   },
 }
