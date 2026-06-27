@@ -30,7 +30,11 @@ export default function AdminCoordinators() {
 
   const hods = allUsers.filter(u => u.role === 'hod')
   const coordinators = allUsers.filter(u => u.role === 'coordinator')
-  const students = allUsers.filter(u => u.role === 'student' && u.approved)
+  // Only pure students — exclude anyone who is also an HOD or coordinator
+  const hodAndCoordIds = new Set([...hods.map(h => h.id), ...coordinators.map(c => c.id)])
+  const students = allUsers.filter(u =>
+    u.role === 'student' && (u.approved === true || u.approved === 'true') && !hodAndCoordIds.has(u.id)
+  )
 
   function hodForDept(code) { return hods.find(h => h.department === code) }
   function coordsForDept(code) { return coordinators.filter(c => c.department === code) }
@@ -164,10 +168,17 @@ export default function AdminCoordinators() {
 }
 
 // ─── DEPARTMENT DETAIL VIEW ───
-function DeptDetail({ deptCode, branches, hod, coords, students, allUsers, onBack, onCreateHod, onCreateCoord }) {
+function DeptDetail({ deptCode, branches, hod, coords, students: rawStudents, allUsers, onBack, onCreateHod, onCreateCoord }) {
   const [showStudents, setShowStudents] = useState(false)
   const [search, setSearch] = useState('')
   const branchName = branches.find(b => b.code === deptCode)?.name || deptCode
+
+  // Defensive: only students for THIS department, excluding HOD/coordinators
+  const hodAndCoordIds = new Set([
+    ...(hod ? [hod.id] : []),
+    ...coords.map(c => c.id),
+  ])
+  const students = rawStudents.filter(s => s.department === deptCode && !hodAndCoordIds.has(s.id))
 
   const filteredStudents = useMemo(() => {
     if (!search) return students
