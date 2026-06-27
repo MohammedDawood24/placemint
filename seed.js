@@ -22,7 +22,7 @@
  */
 
 import { initializeApp } from 'firebase/app'
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { getFirestore, doc, setDoc, collection, Timestamp } from 'firebase/firestore'
 
 // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────
@@ -208,12 +208,21 @@ const SITE_SETTINGS = {
 async function createUser(email, password) {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
-    await signOut(auth)  // Sign out immediately so we can create the next user
+    await signOut(auth)
     return cred.user.uid
   } catch (err) {
     if (err.code === 'auth/email-already-in-use') {
-      console.log(`  ⚠ ${email} already exists, skipping auth creation`)
-      return null
+      // User exists in Auth — sign in to get their UID, then sign out
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password)
+        const uid = cred.user.uid
+        await signOut(auth)
+        console.log(`  ⚠ ${email} already exists in Auth, updating Firestore docs`)
+        return uid
+      } catch {
+        console.log(`  ⚠ ${email} exists but password doesn't match seed password, skipping`)
+        return null
+      }
     }
     throw err
   }

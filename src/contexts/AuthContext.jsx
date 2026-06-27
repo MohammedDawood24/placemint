@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
           const userDoc = await getDoc(doc(db, 'users', user.uid))
           if (userDoc.exists()) {
             const data = userDoc.data()
-            if (data.approved) {
+            if (data.approved === true || data.approved === 'true' || data.role === 'admin') {
               setUserData({ id: user.uid, ...data })
             } else {
               // Not approved — sign them out
@@ -94,8 +94,8 @@ export function AuthProvider({ children }) {
         }
       }
 
-      // Approval check
-      if (!data.approved) {
+      // Approval check — admins are always allowed
+      if (data.role !== 'admin' && data.approved !== true && data.approved !== 'true') {
         await signOut(auth)
         throw new Error('Your account is pending approval. Contact your HOD or placement admin.')
       }
