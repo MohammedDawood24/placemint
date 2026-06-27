@@ -38,6 +38,8 @@ export default function AdminStudents() {
   const [search, setSearch] = useState('')
   const [filterDept, setFilterDept] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [page, setPage] = useState(1)
+  const perPage = 10
 
   // Merge users + students
   const userMap = {}
@@ -52,6 +54,7 @@ export default function AdminStudents() {
 
   // Filter + search
   const filtered = useMemo(() => {
+    setPage(1) // reset to page 1 when filters change
     return merged.filter(s => {
       if (filterDept && s.department !== filterDept) return false
       if (filterStatus && s.placementStatus !== filterStatus) return false
@@ -67,6 +70,11 @@ export default function AdminStudents() {
       return true
     })
   }, [merged, search, filterDept, filterStatus])
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage)
 
   const selected = selectedId ? merged.find(s => s.id === selectedId) : null
 
@@ -112,7 +120,7 @@ export default function AdminStudents() {
         <div className="sec-head" style={{ marginBottom: 14 }}>
           <div>
             <h3>All students</h3>
-            <div className="sub">{loading ? 'Loading…' : `${filtered.length} of ${merged.length} students`}</div>
+            <div className="sub">{loading ? 'Loading…' : `${filtered.length} of ${merged.length} students${filtered.length > perPage ? ` · page ${safePage} of ${totalPages}` : ''}`}</div>
           </div>
           <div style={{ display: 'flex', gap: 9 }}>
             <button className="btn btn-ghost" onClick={handleExport}>{Icons.dl} Export Excel</button>
@@ -162,7 +170,7 @@ export default function AdminStudents() {
               <tr><th>Student</th><th>Dept</th><th>Sem</th><th>CGPA</th><th>10th / 12th</th><th>Status</th><th>Package</th></tr>
             </thead>
             <tbody>
-              {filtered.map(s => {
+              {paginated.map(s => {
                 const [badge, label] = STATUS_MAP[s.placementStatus] || ['b-grey', s.placementStatus || '—']
                 return (
                   <tr key={s.id}>
@@ -191,6 +199,38 @@ export default function AdminStudents() {
               })}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              paddingTop: 16, marginTop: 16, borderTop: '1px solid var(--line)' }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, filtered.length)} of {filtered.length}
+              </span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button className="btn btn-ghost" disabled={safePage <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  style={{ padding: '6px 12px', fontSize: 13 }}>← Prev</button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                  .reduce((acc, p, i, arr) => {
+                    if (i > 0 && p - arr[i - 1] > 1) acc.push('...')
+                    acc.push(p)
+                    return acc
+                  }, [])
+                  .map((p, i) =>
+                    p === '...'
+                      ? <span key={'dot' + i} style={{ padding: '6px 4px', fontSize: 13, color: 'var(--muted)' }}>…</span>
+                      : <button key={p} className={`btn ${p === safePage ? 'btn-pri' : 'btn-ghost'}`}
+                          onClick={() => setPage(p)}
+                          style={{ padding: '6px 12px', fontSize: 13, minWidth: 36 }}>{p}</button>
+                  )}
+                <button className="btn btn-ghost" disabled={safePage >= totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  style={{ padding: '6px 12px', fontSize: 13 }}>Next →</button>
+              </div>
+            </div>
+          )}
         )}
       </div>
     </>
