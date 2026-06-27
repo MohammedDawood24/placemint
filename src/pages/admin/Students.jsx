@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useCollection, where, orderBy, updateDocument, addDocument } from '../../hooks/useFirestore'
+import { useCollection, where, orderBy, updateDocument, addDocument, deleteDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import WhatsAppShare from '../../components/WhatsAppShare'
@@ -107,7 +107,15 @@ export default function AdminStudents() {
 
   if (view === 'detail' && selected) {
     return <StudentDetail student={selected} onBack={() => { setView('list'); setSelectedId(null) }}
-      onEdit={() => setView('edit')} />
+      onEdit={() => setView('edit')}
+      onDelete={async () => {
+        try {
+          await deleteDocument('students', selected.id)
+          await deleteDocument('users', selected.id)
+          toast.success('Student deleted')
+          setView('list'); setSelectedId(null)
+        } catch (e) { toast.error('Delete failed: ' + e.message) }
+      }} />
   }
   if (view === 'edit' && selected) {
     return <StudentForm student={selected} onBack={() => setView('detail')}
@@ -271,11 +279,16 @@ Use the password shared with you earlier. If you've forgotten it, use the reset 
 }
 
 // ─── STUDENT DETAIL VIEW ───
-function StudentDetail({ student, onBack, onEdit }) {
+function StudentDetail({ student, onBack, onEdit, onDelete }) {
   const s = student
   const [badge, label] = STATUS_MAP[s.placementStatus] || ['b-grey', '—']
   const semesters = s.semesters || {}
   const semKeys = Object.keys(semesters).sort()
+
+  function handleDelete() {
+    if (!confirm(`Delete ${s.displayName}?\n\nThis removes their profile and academic records from the system. The Firebase Auth account will need to be deleted separately from the Firebase console.`)) return
+    onDelete()
+  }
 
   return (
     <>
@@ -303,6 +316,10 @@ function StudentDetail({ student, onBack, onEdit }) {
             WhatsApp
           </a>
           <button className="btn btn-pri" onClick={onEdit}>{Icons.gear} Edit</button>
+          <button className="btn" onClick={handleDelete}
+            style={{ background: 'transparent', border: '1.5px solid var(--rose)', color: 'var(--rose)',
+              padding: '9px 15px', borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit' }}>Delete</button>
         </div>
       </div>
 
