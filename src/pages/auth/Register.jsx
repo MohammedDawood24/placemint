@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ROLE_THEME } from '../../config/roles'
 import { Icons } from '../../components/Icons'
+import { useSite } from '../../contexts/SiteContext'
 import { checkDuplicateUser } from '../../utils/checkDuplicate'
 
 const DEPARTMENTS = ['CSE', 'ISE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AIML', 'DS']
@@ -11,6 +12,7 @@ export default function Register() {
   const theme = ROLE_THEME.student
   const navigate = useNavigate()
   const { registerStudent } = useAuth()
+  const site = useSite()
 
   const [form, setForm] = useState({
     displayName: '', email: '', password: '', confirmPassword: '',
@@ -66,10 +68,10 @@ export default function Register() {
             background: `radial-gradient(50% 40% at 85% 15%, ${theme.glow}, transparent 70%)` }} />
           <div className="brand" style={{ position: 'relative', zIndex: 2 }}>
             <div className="brand-mark" style={{ background: `linear-gradient(145deg, ${theme.accent}, ${theme.accentDark})` }}>P</div>
-            <div><div className="brand-name">PlaceMint</div><div className="brand-sub">Campus Placement Platform</div></div>
+            <div><div className="brand-name">{site.siteName}</div><div className="brand-sub">{site.cellName}</div></div>
           </div>
           <div className="login-hero">
-            <h1>Welcome to <em style={{ fontStyle: 'normal', color: theme.accent }}>PlaceMint</em>.</h1>
+            <h1>Welcome to <em style={{ fontStyle: 'normal', color: theme.accent }}>{site.siteName}</em>.</h1>
             <p>Your account has been created. Your HOD or coordinator will review and approve it shortly.</p>
           </div>
           <div style={{ height: 40 }} />
@@ -98,14 +100,14 @@ export default function Register() {
           background: `radial-gradient(50% 40% at 85% 15%, ${theme.glow}, transparent 70%)` }} />
         <div className="brand" style={{ position: 'relative', zIndex: 2 }}>
           <div className="brand-mark" style={{ background: `linear-gradient(145deg, ${theme.accent}, ${theme.accentDark})` }}>P</div>
-          <div><div className="brand-name">PlaceMint</div><div className="brand-sub">Campus Placement Platform</div></div>
+          <div><div className="brand-name">{site.siteName}</div><div className="brand-sub">{site.cellName}</div></div>
         </div>
         <div className="login-hero">
-          <h1>Join <em style={{ fontStyle: 'normal', color: theme.accent }}>PlaceMint</em> today.</h1>
+          <h1>Join <em style={{ fontStyle: 'normal', color: theme.accent }}>{site.siteName}</em> today.</h1>
           <p>Create your profile, upload your academic records, and get matched to campus drives automatically.</p>
         </div>
         <div className="login-footer">
-          <span>&copy; 2025 PlaceMint</span>
+          <span>&copy; {new Date().getFullYear()} {site.siteName}</span>
           <a href="#">Privacy &middot; Terms</a>
         </div>
       </div>

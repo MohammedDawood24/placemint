@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSite } from '../../contexts/SiteContext'
 import { ROLE_THEME } from '../../config/roles'
 import { Icons } from '../../components/Icons'
+import Modal from '../../components/Modal'
 
 export default function Login({ portalRole }) {
   const theme = ROLE_THEME[portalRole]
   const navigate = useNavigate()
   const { login, userData } = useAuth()
+  const site = useSite()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showModal, setShowModal] = useState(null) // 'privacy' | 'terms' | null
 
   // Redirect to dashboard once userData is set (after successful login)
   useEffect(() => {
@@ -50,6 +54,7 @@ export default function Login({ portalRole }) {
   }
 
   return (
+    <>
     <div className="login">
       {/* ---- art / left panel ---- */}
       <div className="login-art" style={{ background: theme.gradient }}>
@@ -61,10 +66,10 @@ export default function Login({ portalRole }) {
         <div className="brand">
           <div className="brand-mark" style={{
             background: `linear-gradient(145deg, ${theme.accent}, ${theme.accentDark})`
-          }}>P</div>
+          }}>{(site.siteName || 'P')[0]}</div>
           <div>
-            <div className="brand-name">PlaceMint</div>
-            <div className="brand-sub">Campus Placement Platform</div>
+            <div className="brand-name">{site.siteName}</div>
+            <div className="brand-sub">{site.cellName}</div>
           </div>
         </div>
 
@@ -105,15 +110,20 @@ export default function Login({ portalRole }) {
         </div>
 
         <div className="login-footer">
-          <span>&copy; 2025 PlaceMint</span>
-          <a href="#">Privacy &middot; Terms</a>
+          <span>&copy; {new Date().getFullYear()} {site.siteName}</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <a href="#" onClick={e => { e.preventDefault(); setShowModal('privacy') }}
+              style={{ color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}>Privacy</a>
+            <a href="#" onClick={e => { e.preventDefault(); setShowModal('terms') }}
+              style={{ color: 'rgba(255,255,255,.5)', textDecoration: 'none' }}>Terms</a>
+          </div>
         </div>
       </div>
 
       {/* ---- form / right panel ---- */}
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="kicker" style={{ color: theme.accent }}>{theme.kicker}</div>
-        <h2>Sign in to continue</h2>
+        <h2>Sign in to {site.siteName}</h2>
         <p className="lede">
           {portalRole === 'student' && 'Use the credentials shared by your placement cell or coordinator.'}
           {portalRole === 'hod' && 'HODs and coordinators — sign in with your department account.'}
@@ -188,5 +198,17 @@ export default function Login({ portalRole }) {
         </div>
       </form>
     </div>
+
+    {showModal === 'privacy' && (
+      <Modal title="Privacy Policy" onClose={() => setShowModal(null)}>
+        {site.privacyPolicy || 'No privacy policy has been published yet.'}
+      </Modal>
+    )}
+    {showModal === 'terms' && (
+      <Modal title="Terms & Conditions" onClose={() => setShowModal(null)}>
+        {site.termsAndConditions || 'No terms and conditions have been published yet.'}
+      </Modal>
+    )}
+    </>
   )
 }

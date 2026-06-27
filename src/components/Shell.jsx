@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ROLE_THEME } from '../config/roles'
+import { useSite } from '../contexts/SiteContext'
 import { Icons, initials } from './Icons'
 
 /* Dashboard screens per role */
@@ -130,6 +131,7 @@ export default function Shell() {
   const theme = ROLE_THEME[role] || ROLE_THEME.student
   const nav = NAV[role] || NAV.student
   const screens = SCREENS[role] || SCREENS.student
+  const site = useSite()
 
   const [view, setView] = useState('dash')
   const Screen = screens[view] || (() => <Coming label="This section" />)
@@ -153,10 +155,10 @@ export default function Shell() {
           <div className="brand-mark" style={{
             width: 36, height: 36, borderRadius: 10, fontSize: 15,
             background: `linear-gradient(145deg, ${theme.accent}, ${theme.accentDark})`
-          }}>P</div>
+          }}>{ (site.siteName || 'P')[0] }</div>
           <div>
-            <div className="bn">PlaceMint</div>
-            <div className="bs">Placement Platform</div>
+            <div className="bn">{site.siteName}</div>
+            <div className="bs">{site.cellName}</div>
           </div>
         </div>
 
