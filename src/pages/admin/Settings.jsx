@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 
 const TABS = [
   { k: 'owner', label: 'Owner info', ic: Icons.build },
+  { k: 'branches', label: 'Branches', ic: Icons.cap },
   { k: 'privacy', label: 'Privacy policy', ic: Icons.lock },
   { k: 'terms', label: 'Terms & conditions', ic: Icons.check },
   { k: 'faqs', label: 'Manage FAQs', ic: Icons.spark },
@@ -35,6 +36,7 @@ export default function Settings() {
       </div>
 
       {tab === 'owner' && <OwnerInfo settings={settings} />}
+      {tab === 'branches' && <BranchManager settings={settings} />}
       {tab === 'privacy' && <TextEditor field="privacyPolicy" label="Privacy Policy" settings={settings} />}
       {tab === 'terms' && <TextEditor field="termsAndConditions" label="Terms & Conditions" settings={settings} />}
       {tab === 'faqs' && <FaqManager settings={settings} />}
@@ -345,6 +347,170 @@ function FaqManager({ settings }) {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ─── BRANCH MANAGER ───
+function BranchManager({ settings }) {
+  const [branches, setBranches] = useState(settings?.branches || [])
+  const [editIdx, setEditIdx] = useState(null)
+  const [editForm, setEditForm] = useState({ code: '', name: '' })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setBranches(settings?.branches || [])
+  }, [settings])
+
+  function startAdd() {
+    setEditForm({ code: '', name: '' })
+    setEditIdx('new')
+  }
+
+  function startEdit(idx) {
+    setEditForm({ ...branches[idx] })
+    setEditIdx(idx)
+  }
+
+  function cancelEdit() {
+    setEditIdx(null)
+    setEditForm({ code: '', name: '' })
+  }
+
+  async function handleSave() {
+    const code = editForm.code.trim().toUpperCase()
+    const name = editForm.name.trim()
+    if (!code) return toast.error('Branch code is required')
+    if (!name) return toast.error('Branch name is required')
+
+    // Check duplicate code
+    const isDup = branches.some((b, i) => b.code === code && i !== editIdx)
+    if (isDup) return toast.error(`Branch code "${code}" already exists`)
+
+    setSaving(true)
+    try {
+      const updated = [...branches]
+      if (editIdx === 'new') {
+        updated.push({ code, name })
+      } else {
+        updated[editIdx] = { code, name }
+      }
+      await saveSetting({ branches: updated })
+      setBranches(updated)
+      setEditIdx(null)
+      setEditForm({ code: '', name: '' })
+      toast.success(editIdx === 'new' ? 'Branch added' : 'Branch updated')
+    } catch (e) {
+      toast.error('Save failed: ' + e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(idx) {
+    if (!confirm(`Delete branch "${branches[idx].code} — ${branches[idx].name}"?`)) return
+    try {
+      const updated = branches.filter((_, i) => i !== idx)
+      await saveSetting({ branches: updated })
+      setBranches(updated)
+      toast.success('Branch deleted')
+    } catch (e) {
+      toast.error('Delete failed: ' + e.message)
+    }
+  }
+
+  async function handleReorder(idx, dir) {
+    const updated = [...branches]
+    const target = idx + dir
+    if (target < 0 || target >= updated.length) return
+    ;[updated[idx], updated[target]] = [updated[target], updated[idx]]
+    try {
+      await saveSetting({ branches: updated })
+      setBranches(updated)
+    } catch (e) {
+      toast.error('Reorder failed')
+    }
+  }
+
+  return (
+    <div className="card p">
+      <div className="sec-head">
+        <div>
+          <h3>Branches / Departments</h3>
+          <div className="sub">{branches.length} branch{branches.length !== 1 ? 'es' : ''} configured · used across all forms and filters</div>
+        </div>
+        <button className="btn btn-pri" onClick={startAdd}>{Icons.plus} Add branch</button>
+      </div>
+
+      {/* Add/Edit form */}
+      {editIdx !== null && (
+        <div style={{ background: 'var(--indigo-soft)', borderRadius: 12, padding: 18, marginBottom: 16,
+          border: '1px solid #cfd5ff' }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+            {editIdx === 'new' ? 'Add new branch' : `Editing ${branches[editIdx]?.code}`}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 14 }}>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Code</label>
+              <input value={editForm.code}
+                onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))}
+                placeholder="e.g. CSE" style={{ textTransform: 'uppercase' }} />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Full name</label>
+              <input value={editForm.name}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Computer Science & Engineering" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-ghost" onClick={cancelEdit}>Cancel</button>
+            <button className="btn btn-pri" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : editIdx === 'new' ? 'Add branch' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Branch list */}
+      {branches.length === 0 && editIdx === null ? (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
+          <div style={{ width: 54, height: 54, borderRadius: 14, background: 'var(--indigo-soft)',
+            display: 'grid', placeItems: 'center', margin: '0 auto 14px', color: 'var(--indigo)' }}>{Icons.cap}</div>
+          <b style={{ display: 'block', color: 'var(--ink)', fontSize: 15, marginBottom: 5 }}>No branches configured</b>
+          Add your college's branches to use them in student registration, filters, and job postings.
+        </div>
+      ) : (
+        <table className="tbl">
+          <thead>
+            <tr><th style={{ width: 50 }}>#</th><th style={{ width: 100 }}>Code</th><th>Full name</th><th style={{ width: 140 }}></th></tr>
+          </thead>
+          <tbody>
+            {branches.map((b, idx) => (
+              <tr key={idx}>
+                <td style={{ color: 'var(--muted)' }}>{idx + 1}</td>
+                <td><b className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{b.code}</b></td>
+                <td>{b.name}</td>
+                <td style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                    <button onClick={() => handleReorder(idx, -1)} disabled={idx === 0}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
+                        padding: '2px 4px', fontSize: 14, opacity: idx === 0 ? 0.3 : 1 }}>↑</button>
+                    <button onClick={() => handleReorder(idx, 1)} disabled={idx === branches.length - 1}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
+                        padding: '2px 4px', fontSize: 14, opacity: idx === branches.length - 1 ? 0.3 : 1 }}>↓</button>
+                    <button className="btn btn-ghost" onClick={() => startEdit(idx)}
+                      style={{ padding: '3px 8px', fontSize: 11 }}>Edit</button>
+                    <button className="btn" onClick={() => handleDelete(idx)}
+                      style={{ padding: '3px 8px', fontSize: 11, background: 'transparent',
+                        border: '1px solid var(--line)', color: 'var(--rose)', cursor: 'pointer' }}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   )

@@ -6,8 +6,6 @@ import { Icons } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { checkDuplicateUser } from '../../utils/checkDuplicate'
 
-const DEPARTMENTS = ['CSE', 'ISE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AIML', 'DS']
-
 export default function Register() {
   const theme = ROLE_THEME.student
   const navigate = useNavigate()
@@ -133,7 +131,7 @@ export default function Register() {
             <label>Department *</label>
             <select value={form.department} onChange={e => set('department', e.target.value)}>
               <option value="">Select</option>
-              {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+              {site.branches.map(b => <option key={b.code} value={b.code}>{b.code} — {b.name}</option>)}
             </select>
           </div>
         </div>

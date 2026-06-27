@@ -21,6 +21,7 @@ export function SiteProvider({ children }) {
     privacyPolicy: data?.privacyPolicy || '',
     termsAndConditions: data?.termsAndConditions || '',
     faqs: data?.faqs || [],
+    branches: data?.branches || [],
     raw: data,
   }
 

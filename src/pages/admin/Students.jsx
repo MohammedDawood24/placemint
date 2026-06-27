@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useCollection, where, orderBy, updateDocument, addDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
+import { useSite } from '../../contexts/SiteContext'
 import WhatsAppShare from '../../components/WhatsAppShare'
 import SemesterTable from '../../components/SemesterTable'
 import { createUserWithEmailAndPassword, signOut, getAuth } from 'firebase/auth'
@@ -22,7 +23,6 @@ function getSecondaryAuth() {
   return secondaryAuth
 }
 
-const DEPARTMENTS = ['CSE', 'ISE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AIML', 'DS']
 const STATUSES = ['eligible', 'applied', 'shortlisted', 'interview', 'placed', 'blocked']
 const STATUS_MAP = {
   placed: ['b-green', 'Placed'], interview: ['b-indigo', 'In interview'],
@@ -34,6 +34,7 @@ const STATUS_MAP = {
 export default function AdminStudents() {
   const { data: students, loading } = useCollection('students', [orderBy('updatedAt', 'desc')], [])
   const { data: users } = useCollection('users', [where('role', '==', 'student')], [])
+  const { branches } = useSite()
 
   const [view, setView] = useState('list')       // list | detail | add | edit
   const [selectedId, setSelectedId] = useState(null)
@@ -146,7 +147,7 @@ export default function AdminStudents() {
             style={{ padding: '8px 12px', borderRadius: 10, border: '1.5px solid var(--line)',
               fontSize: 13, fontFamily: 'inherit', background: '#fbfbfe', color: 'var(--ink)' }}>
             <option value="">All departments</option>
-            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+            {branches.map(b => <option key={b.code} value={b.code}>{b.code} — {b.name}</option>)}
           </select>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             style={{ padding: '8px 12px', borderRadius: 10, border: '1.5px solid var(--line)',
@@ -351,6 +352,7 @@ function InfoRow({ label, value, mono }) {
 // ─── ADD / EDIT STUDENT FORM ───
 function StudentForm({ student, onBack, onSaved }) {
   const isEdit = !!student
+  const { branches } = useSite()
 
   const [form, setForm] = useState({
     displayName: student?.displayName || '',
@@ -536,7 +538,7 @@ function StudentForm({ student, onBack, onSaved }) {
               <label>Department *</label>
               <select value={form.department} onChange={e => set('department', e.target.value)}>
                 <option value="">Select</option>
-                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                {branches.map(b => <option key={b.code} value={b.code}>{b.code} — {b.name}</option>)}
               </select>
             </div>
             <div className="field">

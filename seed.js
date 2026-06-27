@@ -201,6 +201,16 @@ const SITE_SETTINGS = {
     { question: 'How do I upload my marks card?', answer: 'Go to My Profile → Academic Record and click Upload next to the relevant semester.' },
     { question: 'Who approves my registration?', answer: 'Your department HOD or coordinator reviews and approves new registrations.' },
   ],
+  branches: [
+    { code: 'CSE', name: 'Computer Science & Engineering' },
+    { code: 'ISE', name: 'Information Science & Engineering' },
+    { code: 'ECE', name: 'Electronics & Communication Engineering' },
+    { code: 'EEE', name: 'Electrical & Electronics Engineering' },
+    { code: 'MECH', name: 'Mechanical Engineering' },
+    { code: 'CIVIL', name: 'Civil Engineering' },
+    { code: 'AIML', name: 'Artificial Intelligence & Machine Learning' },
+    { code: 'DS', name: 'Data Science' },
+  ],
 }
 
 // ─── SEED FUNCTION ─────────────────────────────────────────────
