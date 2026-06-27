@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useCollection, where, orderBy, updateDocument, addDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import WhatsAppShare from '../../components/WhatsAppShare'
@@ -54,7 +54,6 @@ export default function AdminStudents() {
 
   // Filter + search
   const filtered = useMemo(() => {
-    setPage(1) // reset to page 1 when filters change
     return merged.filter(s => {
       if (filterDept && s.department !== filterDept) return false
       if (filterStatus && s.placementStatus !== filterStatus) return false
@@ -70,6 +69,9 @@ export default function AdminStudents() {
       return true
     })
   }, [merged, search, filterDept, filterStatus])
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1) }, [search, filterDept, filterStatus])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
