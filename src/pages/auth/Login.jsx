@@ -1,18 +1,26 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ROLE_THEME } from '../../config/roles'
 import { Icons } from '../../components/Icons'
 
 export default function Login({ portalRole }) {
   const theme = ROLE_THEME[portalRole]
-  const { login } = useAuth()
+  const navigate = useNavigate()
+  const { login, userData } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Redirect to dashboard once userData is set (after successful login)
+  useEffect(() => {
+    if (userData) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [userData, navigate])
 
   const others = [
     { id: 'student', label: 'Student', path: '/', color: '#E0A43B' },
@@ -28,7 +36,7 @@ export default function Login({ portalRole }) {
     setBusy(true)
     try {
       await login(email, password, portalRole)
-      // App.jsx auto-redirects to /dashboard once userData is set
+      // navigation handled by useEffect above when userData updates
     } catch (err) {
       const msg = err.message || 'Sign in failed.'
       if (msg.includes('auth/invalid-credential') || msg.includes('auth/wrong-password') || msg.includes('auth/user-not-found')) {

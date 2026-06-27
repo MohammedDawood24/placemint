@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -17,20 +17,41 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null) // firebase auth user
-  const [userData, setUserData] = useState(null)        // firestore user doc
+  const [currentUser, setCurrentUser] = useState(null)
+  const [userData, setUserData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Listen to auth state
+  // Ref to track if login() is handling the auth flow
+  // so onAuthStateChanged doesn't interfere
+  const loginInProgress = useRef(false)
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
+
+      // If login() is actively running, let it handle userData
+      if (loginInProgress.current) {
+        return
+      }
+
+      // This handles page refresh (user already signed in)
       if (user) {
-        // Fetch user profile from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid))
-        if (userDoc.exists()) {
-          setUserData({ id: user.uid, ...userDoc.data() })
-        } else {
+        setLoading(true)
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid))
+          if (userDoc.exists()) {
+            const data = userDoc.data()
+            if (data.approved) {
+              setUserData({ id: user.uid, ...data })
+            } else {
+              // Not approved — sign them out
+              await signOut(auth)
+              setUserData(null)
+            }
+          } else {
+            setUserData(null)
+          }
+        } catch {
           setUserData(null)
         }
       } else {
@@ -41,46 +62,54 @@ export function AuthProvider({ children }) {
     return unsub
   }, [])
 
-  // Sign in — checks that the user's role matches the portal they're on
   async function login(email, password, expectedRole) {
-    const cred = await signInWithEmailAndPassword(auth, email, password)
-    const userDoc = await getDoc(doc(db, 'users', cred.user.uid))
+    // Tell onAuthStateChanged to back off
+    loginInProgress.current = true
 
-    if (!userDoc.exists()) {
-      await signOut(auth)
-      throw new Error('Account not found. Contact your placement cell.')
-    }
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password)
+      const userDoc = await getDoc(doc(db, 'users', cred.user.uid))
 
-    const data = userDoc.data()
-
-    // Role check: admin portal only for admin, etc.
-    const roleMatch = {
-      admin: ['admin'],
-      hod: ['hod', 'coordinator'],
-      company: ['company'],
-      student: ['student'],
-    }
-
-    if (expectedRole && roleMatch[expectedRole]) {
-      if (!roleMatch[expectedRole].includes(data.role)) {
+      if (!userDoc.exists()) {
         await signOut(auth)
-        throw new Error(
-          `This is the ${expectedRole} portal. Your account role is "${data.role}". Please use the correct portal.`
-        )
+        throw new Error('Account not found. Contact your placement cell.')
       }
-    }
 
-    // Check approval
-    if (!data.approved) {
-      await signOut(auth)
-      throw new Error('Your account is pending approval. Contact your HOD or placement admin.')
-    }
+      const data = userDoc.data()
 
-    setUserData({ id: cred.user.uid, ...data })
-    return data
+      // Role check
+      const roleMatch = {
+        admin: ['admin'],
+        hod: ['hod', 'coordinator'],
+        company: ['company'],
+        student: ['student'],
+      }
+
+      if (expectedRole && roleMatch[expectedRole]) {
+        if (!roleMatch[expectedRole].includes(data.role)) {
+          await signOut(auth)
+          throw new Error(
+            `This is the ${expectedRole} portal. Your account role is "${data.role}". Please use the correct portal.`
+          )
+        }
+      }
+
+      // Approval check
+      if (!data.approved) {
+        await signOut(auth)
+        throw new Error('Your account is pending approval. Contact your HOD or placement admin.')
+      }
+
+      // Everything valid — set user data
+      setCurrentUser(cred.user)
+      setUserData({ id: cred.user.uid, ...data })
+      setLoading(false)
+      return data
+    } finally {
+      loginInProgress.current = false
+    }
   }
 
-  // Register a new student (default role)
   async function registerStudent(email, password, profile) {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
     const userProfile = {
@@ -89,12 +118,11 @@ export function AuthProvider({ children }) {
       displayName: profile.displayName || '',
       department: profile.department || '',
       phone: profile.phone || '',
-      approved: false, // needs HOD approval
+      approved: false,
       createdAt: serverTimestamp(),
     }
     await setDoc(doc(db, 'users', cred.user.uid), userProfile)
 
-    // Create student academic record
     await setDoc(doc(db, 'students', cred.user.uid), {
       usn: profile.usn || '',
       department: profile.department || '',
@@ -110,12 +138,10 @@ export function AuthProvider({ children }) {
       updatedAt: serverTimestamp(),
     })
 
-    // Sign out immediately — account needs approval first
     await signOut(auth)
     return userProfile
   }
 
-  // Register company (by admin, or self-registration)
   async function registerCompany(email, password, profile) {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
     const userProfile = {
