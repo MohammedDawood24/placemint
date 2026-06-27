@@ -11,6 +11,7 @@ import AdminStudents from '../pages/admin/Students'
 import AdminJobs from '../pages/admin/Jobs'
 import AdminReports from '../pages/admin/Reports'
 import AdminSettings from '../pages/admin/Settings'
+import AdminCoordinators from '../pages/admin/Coordinators'
 
 import HodDashboard from '../pages/hod/Dashboard'
 import HodApprovals from '../pages/hod/Approvals'
@@ -92,7 +93,7 @@ const SCREENS = {
     users: AdminStudents,
     jobs: AdminJobs,
     reports: AdminReports,
-    coords: () => <Coming label="Manage coordinators" />,
+    coords: AdminCoordinators,
     companies: () => <Coming label="Manage companies" />,
     donations: () => <Coming label="Donations" />,
     settings: AdminSettings,
