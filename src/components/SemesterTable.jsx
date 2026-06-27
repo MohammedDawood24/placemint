@@ -141,8 +141,8 @@ export default function SemesterTable({ student, isAdmin }) {
     }
   }
 
-  // ─── APPROVAL BADGE ───
-  function ApprovalBadge({ sem, k }) {
+  // ─── APPROVAL RENDERER (plain function, not a component — avoids remount on state change) ───
+  function renderApproval(sem, k) {
     const v = sem.verified
     if (v === 'approved' || v === true) return <span className="badge b-green">{Icons.check} Approved</span>
     if (v === 'rejected') {
@@ -303,7 +303,7 @@ export default function SemesterTable({ student, isAdmin }) {
                         ? <span className="badge b-green">{Icons.check} All cleared</span>
                         : <span className="badge b-rose">{activeCount} pending</span>}
                     </td>
-                    <td onClick={e => e.stopPropagation()}><ApprovalBadge sem={sem} k={k} /></td>
+                    <td onClick={e => e.stopPropagation()}>{renderApproval(sem, k)}</td>
                     <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                       <button className="btn btn-ghost" onClick={() => startEdit(k)}
                         style={{ padding: '4px 10px', fontSize: 12 }}>{Icons.gear} Edit</button>
