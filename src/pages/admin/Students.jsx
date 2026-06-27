@@ -426,10 +426,10 @@ function StudentForm({ student, onBack, onSaved }) {
           semesters[`sem${i}`] = {
             marks: parseFloat(val),
             backlogs: existing.backlogs || [],
-            verified: isAdmin ? 'approved' : (existing.verified || 'pending'),
+            verified: 'approved',
             approvalComment: existing.approvalComment || '',
             cardUrl: existing.cardUrl || null,
-            lastEditedBy: isAdmin ? 'admin' : 'student',
+            lastEditedBy: 'admin',
           }
         }
       }
