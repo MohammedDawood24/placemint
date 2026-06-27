@@ -36,9 +36,9 @@ export default function AdminCoordinators() {
     u.role === 'student' && (u.approved === true || u.approved === 'true') && !hodAndCoordIds.has(u.id)
   )
 
-  function hodForDept(code) { return hods.find(h => h.department === code) }
-  function coordsForDept(code) { return coordinators.filter(c => c.department === code) }
-  function studentsForDept(code) { return students.filter(s => s.department === code) }
+  function hodForDept(code) { return hods.find(h => (h.department || '').trim().toUpperCase() === code.toUpperCase()) }
+  function coordsForDept(code) { return coordinators.filter(c => (c.department || '').trim().toUpperCase() === code.toUpperCase()) }
+  function studentsForDept(code) { return students.filter(s => (s.department || '').trim().toUpperCase() === code.toUpperCase()) }
 
   // WhatsApp share screen after creation
   if (created) {
@@ -178,7 +178,9 @@ function DeptDetail({ deptCode, branches, hod, coords, students: rawStudents, al
     ...(hod ? [hod.id] : []),
     ...coords.map(c => c.id),
   ])
-  const students = rawStudents.filter(s => s.department === deptCode && !hodAndCoordIds.has(s.id))
+  const students = rawStudents.filter(s =>
+    (s.department || '').trim().toUpperCase() === deptCode.toUpperCase() && !hodAndCoordIds.has(s.id)
+  )
 
   const filteredStudents = useMemo(() => {
     if (!search) return students
@@ -366,7 +368,7 @@ function DeptDetail({ deptCode, branches, hod, coords, students: rawStudents, al
               </div>
             ) : (
               <table className="tbl">
-                <thead><tr><th>Student</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+                <thead><tr><th>Student</th><th>Email</th><th>Dept</th><th>Phone</th><th></th></tr></thead>
                 <tbody>
                   {filteredStudents.map(s => (
                     <tr key={s.id}>
@@ -377,6 +379,7 @@ function DeptDetail({ deptCode, branches, hod, coords, students: rawStudents, al
                         </div>
                       </td>
                       <td style={{ color: 'var(--muted)', fontSize: 13 }}>{s.email}</td>
+                      <td><span className="badge b-indigo" style={{ fontSize: 10 }}>{s.department || '—'}</span></td>
                       <td style={{ color: 'var(--muted)', fontSize: 13 }}>{s.phone || '—'}</td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
