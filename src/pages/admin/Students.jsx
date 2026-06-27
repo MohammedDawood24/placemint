@@ -328,7 +328,19 @@ function StudentDetail({ student, onBack, onEdit }) {
 
         {/* Semester-wise marks */}
         <div className="card p" style={{ gridColumn: '1 / -1' }}>
-          <div className="sec-head"><h3>Semester-wise academic record</h3></div>
+          <div className="sec-head">
+            <h3>Semester-wise academic record</h3>
+            {semKeys.length > 0 && (() => {
+              const totalBacklogs = semKeys.reduce((sum, k) => sum + (semesters[k].backlogs || 0), 0)
+              const totalCleared = semKeys.reduce((sum, k) => sum + (semesters[k].backlogsCleared || 0), 0)
+              const active = totalBacklogs - totalCleared
+              return active > 0
+                ? <span className="badge b-rose">{active} active backlog{active > 1 ? 's' : ''}</span>
+                : totalBacklogs > 0
+                ? <span className="badge b-green">{Icons.check} All backlogs cleared</span>
+                : null
+            })()}
+          </div>
           {semKeys.length === 0 ? (
             <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
               No semester records uploaded yet.
@@ -336,15 +348,38 @@ function StudentDetail({ student, onBack, onEdit }) {
           ) : (
             <table className="tbl">
               <thead>
-                <tr><th>Semester</th><th>Marks / SGPA</th><th>Marks card</th><th>Verified</th></tr>
+                <tr>
+                  <th>Semester</th><th>SGPA</th><th>Backlogs</th><th>Subjects</th><th>Status</th>
+                  <th>Marks card</th><th>Verified</th>
+                </tr>
               </thead>
               <tbody>
                 {semKeys.map(k => {
                   const sem = semesters[k]
+                  const hasBacklogs = (sem.backlogs || 0) > 0
+                  const allCleared = hasBacklogs && (sem.backlogsCleared || 0) >= (sem.backlogs || 0)
+                  const activeCount = hasBacklogs ? (sem.backlogs || 0) - (sem.backlogsCleared || 0) : 0
                   return (
                     <tr key={k}>
                       <td><b style={{ fontWeight: 600 }}>{k.replace('sem', 'Semester ')}</b></td>
                       <td className="mono">{sem.marks ?? '—'}</td>
+                      <td>
+                        {hasBacklogs
+                          ? <span className="mono" style={{ color: allCleared ? 'var(--green)' : 'var(--rose)', fontWeight: 600 }}>
+                              {sem.backlogs}
+                            </span>
+                          : <span style={{ color: 'var(--muted)' }}>0</span>}
+                      </td>
+                      <td style={{ fontSize: 12.5, color: 'var(--muted)', maxWidth: 200 }}>
+                        {sem.backlogSubjects || '—'}
+                      </td>
+                      <td>
+                        {!hasBacklogs
+                          ? <span className="badge b-grey">Clear</span>
+                          : allCleared
+                          ? <span className="badge b-green">{Icons.check} Cleared ({sem.backlogsCleared}/{sem.backlogs})</span>
+                          : <span className="badge b-rose">{activeCount} active</span>}
+                      </td>
                       <td>{sem.cardUrl
                         ? <a href={sem.cardUrl} target="_blank" rel="noreferrer" className="btn btn-ghost"
                             style={{ padding: '4px 10px', fontSize: 12 }}>View card</a>
@@ -395,15 +430,23 @@ function StudentForm({ student, onBack, onSaved }) {
     placementStatus: student?.placementStatus || 'eligible',
     placedAt: student?.placedAt || '',
     package: student?.package ?? '',
-    // Semester-wise marks
-    sem1: student?.semesters?.sem1?.marks ?? '',
-    sem2: student?.semesters?.sem2?.marks ?? '',
-    sem3: student?.semesters?.sem3?.marks ?? '',
-    sem4: student?.semesters?.sem4?.marks ?? '',
-    sem5: student?.semesters?.sem5?.marks ?? '',
-    sem6: student?.semesters?.sem6?.marks ?? '',
-    sem7: student?.semesters?.sem7?.marks ?? '',
-    sem8: student?.semesters?.sem8?.marks ?? '',
+    // Semester-wise marks + backlogs
+    sem1: student?.semesters?.sem1?.marks ?? '', sem1_bl: student?.semesters?.sem1?.backlogs ?? '',
+    sem1_bls: student?.semesters?.sem1?.backlogSubjects ?? '', sem1_blc: student?.semesters?.sem1?.backlogsCleared ?? '',
+    sem2: student?.semesters?.sem2?.marks ?? '', sem2_bl: student?.semesters?.sem2?.backlogs ?? '',
+    sem2_bls: student?.semesters?.sem2?.backlogSubjects ?? '', sem2_blc: student?.semesters?.sem2?.backlogsCleared ?? '',
+    sem3: student?.semesters?.sem3?.marks ?? '', sem3_bl: student?.semesters?.sem3?.backlogs ?? '',
+    sem3_bls: student?.semesters?.sem3?.backlogSubjects ?? '', sem3_blc: student?.semesters?.sem3?.backlogsCleared ?? '',
+    sem4: student?.semesters?.sem4?.marks ?? '', sem4_bl: student?.semesters?.sem4?.backlogs ?? '',
+    sem4_bls: student?.semesters?.sem4?.backlogSubjects ?? '', sem4_blc: student?.semesters?.sem4?.backlogsCleared ?? '',
+    sem5: student?.semesters?.sem5?.marks ?? '', sem5_bl: student?.semesters?.sem5?.backlogs ?? '',
+    sem5_bls: student?.semesters?.sem5?.backlogSubjects ?? '', sem5_blc: student?.semesters?.sem5?.backlogsCleared ?? '',
+    sem6: student?.semesters?.sem6?.marks ?? '', sem6_bl: student?.semesters?.sem6?.backlogs ?? '',
+    sem6_bls: student?.semesters?.sem6?.backlogSubjects ?? '', sem6_blc: student?.semesters?.sem6?.backlogsCleared ?? '',
+    sem7: student?.semesters?.sem7?.marks ?? '', sem7_bl: student?.semesters?.sem7?.backlogs ?? '',
+    sem7_bls: student?.semesters?.sem7?.backlogSubjects ?? '', sem7_blc: student?.semesters?.sem7?.backlogsCleared ?? '',
+    sem8: student?.semesters?.sem8?.marks ?? '', sem8_bl: student?.semesters?.sem8?.backlogs ?? '',
+    sem8_bls: student?.semesters?.sem8?.backlogSubjects ?? '', sem8_blc: student?.semesters?.sem8?.backlogsCleared ?? '',
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -426,9 +469,13 @@ function StudentForm({ student, onBack, onSaved }) {
       const semesters = {}
       for (let i = 1; i <= 8; i++) {
         const val = form[`sem${i}`]
-        if (val !== '' && val !== null && val !== undefined) {
+        const bl = form[`sem${i}_bl`]
+        if (val !== '' || bl !== '') {
           semesters[`sem${i}`] = {
-            marks: parseFloat(val),
+            marks: val !== '' ? parseFloat(val) : null,
+            backlogs: bl !== '' ? parseInt(bl) : 0,
+            backlogSubjects: form[`sem${i}_bls`] || '',
+            backlogsCleared: form[`sem${i}_blc`] !== '' ? parseInt(form[`sem${i}_blc`]) : 0,
             cardUrl: student?.semesters?.[`sem${i}`]?.cardUrl || null,
             verified: student?.semesters?.[`sem${i}`]?.verified || false,
           }
@@ -602,16 +649,43 @@ function StudentForm({ student, onBack, onSaved }) {
             </div>
           </div>
 
-          <div className="sec-head" style={{ marginTop: 10 }}><h3>Semester-wise marks / SGPA</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0 16px' }}>
-            {[1,2,3,4,5,6,7,8].map(i => (
-              <div className="field" key={i}>
-                <label>Sem {i}</label>
-                <input type="number" value={form[`sem${i}`]} onChange={e => set(`sem${i}`, e.target.value)}
-                  placeholder="—" min="0" max="10" step="0.01" />
-              </div>
-            ))}
-          </div>
+          <div className="sec-head" style={{ marginTop: 10 }}><h3>Semester-wise marks &amp; backlogs</h3></div>
+          <table className="tbl">
+            <thead>
+              <tr><th>Sem</th><th>SGPA</th><th>Backlogs</th><th>Subjects</th><th>Cleared</th></tr>
+            </thead>
+            <tbody>
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <tr key={i}>
+                  <td><b style={{ fontWeight: 600 }}>Sem {i}</b></td>
+                  <td style={{ width: 90 }}>
+                    <input type="number" value={form[`sem${i}`]} onChange={e => set(`sem${i}`, e.target.value)}
+                      placeholder="—" min="0" max="10" step="0.01"
+                      style={{ width: '100%', padding: '8px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }} />
+                  </td>
+                  <td style={{ width: 70 }}>
+                    <input type="number" value={form[`sem${i}_bl`]} onChange={e => set(`sem${i}_bl`, e.target.value)}
+                      placeholder="0" min="0"
+                      style={{ width: '100%', padding: '8px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }} />
+                  </td>
+                  <td>
+                    <input value={form[`sem${i}_bls`]} onChange={e => set(`sem${i}_bls`, e.target.value)}
+                      placeholder="e.g. Maths, Physics"
+                      style={{ width: '100%', padding: '8px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13 }} />
+                  </td>
+                  <td style={{ width: 70 }}>
+                    <input type="number" value={form[`sem${i}_blc`]} onChange={e => set(`sem${i}_blc`, e.target.value)}
+                      placeholder="0" min="0"
+                      style={{ width: '100%', padding: '8px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Placement status */}
