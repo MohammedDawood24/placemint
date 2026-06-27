@@ -649,9 +649,9 @@ function StudentForm({ student, onBack, onSaved }) {
             </div>
             <div className="field">
               <label>CGPA <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400 }}>(auto-calculated from SGPAs)</span></label>
-              <input type="number" value={form.cgpa} onChange={e => set('cgpa', e.target.value)}
-                placeholder="8.5" min="0" max="10" step="0.01"
-                style={form._cgpaAuto ? { background: 'var(--green-soft)', borderColor: 'var(--green)' } : {}} />
+              <input type="number" value={form.cgpa} readOnly
+                placeholder="Enter semester SGPAs below" min="0" max="10" step="0.01"
+                style={{ background: 'var(--green-soft)', borderColor: 'var(--green)', cursor: 'default' }} />
             </div>
           </div>
 

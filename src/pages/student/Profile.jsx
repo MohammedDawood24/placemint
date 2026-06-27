@@ -122,9 +122,9 @@ export default function StudentProfile() {
           </div>
           <div className="field">
             <label>Current CGPA <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400 }}>(auto-calculated from SGPAs)</span></label>
-            <input type="number" step="0.1" value={form.cgpa} onChange={e => set('cgpa', e.target.value)}
-              placeholder="e.g. 8.5" min="0" max="10"
-              style={{ background: 'var(--green-soft)', borderColor: 'var(--green)' }} />
+            <input type="number" step="0.1" value={form.cgpa} readOnly
+              placeholder="Calculated from semester records" min="0" max="10"
+              style={{ background: 'var(--green-soft)', borderColor: 'var(--green)', cursor: 'default' }} />
           </div>
           <div style={{ padding: '14px 0', color: 'var(--muted)', fontSize: 12, borderTop: '1px solid var(--line)', marginTop: 8 }}>
             Marks card uploads will be enabled in the next increment.
