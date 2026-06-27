@@ -342,8 +342,10 @@ function StudentDetail({ student, onBack, onEdit, onDelete }) {
           <InfoRow label="Placed at" value={s.placedAt || '—'} />
           <InfoRow label="Package" value={s.package ? `₹${s.package} LPA` : '—'} />
           <InfoRow label="CGPA" value={s.cgpa ?? '—'} mono />
-          <InfoRow label="10th marks" value={s.tenthMarks != null ? `${s.tenthMarks}%` : '—'} mono />
-          <InfoRow label="12th marks" value={s.twelfthMarks != null ? `${s.twelfthMarks}%` : '—'} mono />
+          <MarksApproval label="10th marks" value={s.tenthMarks} field="tenthVerified"
+            verified={s.tenthVerified} studentId={s.id} isAdmin={true} />
+          <MarksApproval label="12th marks" value={s.twelfthMarks} field="twelfthVerified"
+            verified={s.twelfthVerified} studentId={s.id} isAdmin={true} />
         </div>
 
         {/* Semester-wise marks — inline editable with approval */}
@@ -362,6 +364,57 @@ function InfoRow({ label, value, mono }) {
         className={mono ? 'mono' : ''}>
         {typeof value === 'string' || typeof value === 'number' ? (value || '—') : value}
       </span>
+    </div>
+  )
+}
+
+function MarksApproval({ label, value, field, verified, studentId, isAdmin }) {
+  const v = verified || 'pending'
+  const hasValue = value != null && value !== ''
+
+  async function handleApprove() {
+    try {
+      await updateDocument('students', studentId, { [field]: 'approved' })
+      toast.success(`${label} approved`)
+    } catch (e) { toast.error('Failed: ' + e.message) }
+  }
+
+  async function handleReject() {
+    try {
+      await updateDocument('students', studentId, { [field]: 'rejected' })
+      toast.success(`${label} rejected — student can re-enter`)
+    } catch (e) { toast.error('Failed: ' + e.message) }
+  }
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '10px 0', borderBottom: '1px solid var(--line)',
+      background: v === 'pending' && hasValue ? '#fffbf0' : 'transparent',
+      margin: '0 -20px', paddingLeft: 20, paddingRight: 20 }}>
+      <span style={{ fontSize: 13, color: 'var(--muted)' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}>
+          {hasValue ? `${value}%` : '—'}
+        </span>
+        {!hasValue ? (
+          <span className="badge b-grey" style={{ fontSize: 10 }}>Not entered</span>
+        ) : v === 'approved' ? (
+          <span className="badge b-green" style={{ fontSize: 10 }}>{Icons.check} Approved</span>
+        ) : isAdmin && v !== 'approved' ? (
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button className="btn btn-pri" onClick={handleApprove}
+              style={{ padding: '3px 8px', fontSize: 11 }}>{Icons.check} Approve</button>
+            <button className="btn" onClick={handleReject}
+              style={{ padding: '3px 8px', fontSize: 11, background: 'transparent',
+                border: '1px solid var(--rose)', color: 'var(--rose)', cursor: 'pointer',
+                borderRadius: 10, fontFamily: 'inherit', fontWeight: 600 }}>Reject</button>
+          </div>
+        ) : v === 'rejected' ? (
+          <span className="badge b-rose" style={{ fontSize: 10 }}>Rejected</span>
+        ) : (
+          <span className="badge b-gold" style={{ fontSize: 10 }}>Pending</span>
+        )}
+      </div>
     </div>
   )
 }

@@ -47,7 +47,7 @@ export default function StudentProfile() {
   async function handleSave() {
     setSaving(true)
     try {
-      await updateDocument('students', userData.id, {
+      const updates = {
         tenthMarks: form.tenthMarks ? parseFloat(form.tenthMarks) : null,
         twelfthMarks: form.twelfthMarks ? parseFloat(form.twelfthMarks) : null,
         cgpa: form.cgpa ? parseFloat(form.cgpa) : null,
@@ -55,7 +55,15 @@ export default function StudentProfile() {
         department: form.department,
         semester: form.semester ? parseInt(form.semester) : null,
         profileComplete: !!(form.tenthMarks && form.twelfthMarks && form.cgpa && form.usn && form.department),
-      })
+      }
+      // Set to pending if student changed marks (and not already approved)
+      if (student?.tenthVerified !== 'approved' && form.tenthMarks) {
+        updates.tenthVerified = 'pending'
+      }
+      if (student?.twelfthVerified !== 'approved' && form.twelfthMarks) {
+        updates.twelfthVerified = 'pending'
+      }
+      await updateDocument('students', userData.id, updates)
       await updateDocument('users', userData.id, { phone: form.phone })
       toast.success('Profile saved')
     } catch (e) {
@@ -75,14 +83,42 @@ export default function StudentProfile() {
         <div className="card p">
           <div className="sec-head"><div><h3>Academic record</h3></div></div>
           <div className="field">
-            <label>10th marks (%)</label>
-            <input type="number" value={form.tenthMarks} onChange={e => set('tenthMarks', e.target.value)}
-              placeholder="e.g. 92" min="0" max="100" />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              10th marks (%)
+              {student?.tenthVerified === 'approved'
+                ? <span className="badge b-green" style={{ fontSize: 10 }}>{Icons.check} Approved</span>
+                : student?.tenthVerified === 'rejected'
+                ? <span className="badge b-rose" style={{ fontSize: 10 }}>Rejected — re-enter</span>
+                : student?.tenthMarks != null
+                ? <span className="badge b-gold" style={{ fontSize: 10 }}>Pending</span>
+                : null}
+            </label>
+            {student?.tenthVerified === 'approved' ? (
+              <input type="number" value={form.tenthMarks} disabled
+                style={{ opacity: 0.6, background: 'var(--green-soft)' }} />
+            ) : (
+              <input type="number" value={form.tenthMarks} onChange={e => set('tenthMarks', e.target.value)}
+                placeholder="e.g. 92" min="0" max="100" />
+            )}
           </div>
           <div className="field">
-            <label>12th / PUC marks (%)</label>
-            <input type="number" value={form.twelfthMarks} onChange={e => set('twelfthMarks', e.target.value)}
-              placeholder="e.g. 88" min="0" max="100" />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              12th / PUC marks (%)
+              {student?.twelfthVerified === 'approved'
+                ? <span className="badge b-green" style={{ fontSize: 10 }}>{Icons.check} Approved</span>
+                : student?.twelfthVerified === 'rejected'
+                ? <span className="badge b-rose" style={{ fontSize: 10 }}>Rejected — re-enter</span>
+                : student?.twelfthMarks != null
+                ? <span className="badge b-gold" style={{ fontSize: 10 }}>Pending</span>
+                : null}
+            </label>
+            {student?.twelfthVerified === 'approved' ? (
+              <input type="number" value={form.twelfthMarks} disabled
+                style={{ opacity: 0.6, background: 'var(--green-soft)' }} />
+            ) : (
+              <input type="number" value={form.twelfthMarks} onChange={e => set('twelfthMarks', e.target.value)}
+                placeholder="e.g. 88" min="0" max="100" />
+            )}
           </div>
           <div className="field">
             <label>Current CGPA <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400 }}>(auto-calculated from SGPAs)</span></label>
