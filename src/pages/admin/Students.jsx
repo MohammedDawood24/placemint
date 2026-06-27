@@ -595,9 +595,10 @@ function StudentForm({ student, onBack, onSaved }) {
                 placeholder="88" min="0" max="100" step="0.1" />
             </div>
             <div className="field">
-              <label>CGPA</label>
+              <label>CGPA <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400 }}>(auto-calculated from SGPAs)</span></label>
               <input type="number" value={form.cgpa} onChange={e => set('cgpa', e.target.value)}
-                placeholder="8.5" min="0" max="10" step="0.01" />
+                placeholder="8.5" min="0" max="10" step="0.01"
+                style={form._cgpaAuto ? { background: 'var(--green-soft)', borderColor: 'var(--green)' } : {}} />
             </div>
           </div>
 
@@ -609,7 +610,24 @@ function StudentForm({ student, onBack, onSaved }) {
             {[1,2,3,4,5,6,7,8].map(i => (
               <div className="field" key={i}>
                 <label>Sem {i}</label>
-                <input type="number" value={form[`sem${i}`]} onChange={e => set(`sem${i}`, e.target.value)}
+                <input type="number" value={form[`sem${i}`]}
+                  onChange={e => {
+                    const val = e.target.value
+                    setForm(f => {
+                      const updated = { ...f, [`sem${i}`]: val }
+                      // Recalculate CGPA
+                      const sgpas = [1,2,3,4,5,6,7,8]
+                        .map(n => n === i ? val : updated[`sem${n}`])
+                        .filter(v => v !== '' && v !== null && v !== undefined)
+                        .map(Number)
+                        .filter(n => !isNaN(n) && n > 0)
+                      if (sgpas.length > 0) {
+                        updated.cgpa = (sgpas.reduce((a, b) => a + b, 0) / sgpas.length).toFixed(2)
+                        updated._cgpaAuto = true
+                      }
+                      return updated
+                    })
+                  }}
                   placeholder="—" min="0" max="10" step="0.01" />
               </div>
             ))}

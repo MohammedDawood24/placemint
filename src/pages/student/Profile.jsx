@@ -29,6 +29,19 @@ export default function StudentProfile() {
     }
   }, [student]) // eslint-disable-line
 
+  useEffect(() => {
+    if (student) {
+      const sems = student.semesters || {}
+      const sgpas = Object.values(sems)
+        .map(s => s.marks)
+        .filter(v => v != null && !isNaN(v) && v > 0)
+      if (sgpas.length > 0) {
+        const avg = (sgpas.reduce((a, b) => a + b, 0) / sgpas.length).toFixed(2)
+        setForm(f => ({ ...f, cgpa: avg }))
+      }
+    }
+  }, [student?.semesters]) // eslint-disable-line
+
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function handleSave() {
@@ -72,9 +85,10 @@ export default function StudentProfile() {
               placeholder="e.g. 88" min="0" max="100" />
           </div>
           <div className="field">
-            <label>Current CGPA</label>
+            <label>Current CGPA <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400 }}>(auto-calculated from SGPAs)</span></label>
             <input type="number" step="0.1" value={form.cgpa} onChange={e => set('cgpa', e.target.value)}
-              placeholder="e.g. 8.5" min="0" max="10" />
+              placeholder="e.g. 8.5" min="0" max="10"
+              style={{ background: 'var(--green-soft)', borderColor: 'var(--green)' }} />
           </div>
           <div style={{ padding: '14px 0', color: 'var(--muted)', fontSize: 12, borderTop: '1px solid var(--line)', marginTop: 8 }}>
             Marks card uploads will be enabled in the next increment.
