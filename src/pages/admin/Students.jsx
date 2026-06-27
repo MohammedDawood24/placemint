@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword, signOut, getAuth } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
 import { db } from '../../config/firebase'
+import { checkDuplicateUser } from '../../utils/checkDuplicate'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
@@ -400,6 +401,15 @@ function StudentForm({ student, onBack, onSaved }) {
 
     setBusy(true)
     try {
+      // Check for duplicate email/phone before creating
+      if (!isEdit || (isEdit && form.phone !== student.phone)) {
+        const dupError = await checkDuplicateUser(
+          isEdit ? null : form.email,
+          form.phone,
+          isEdit ? student.id : null
+        )
+        if (dupError) { setError(dupError); setBusy(false); return }
+      }
       // Build semesters map
       const semesters = {}
       for (let i = 1; i <= 8; i++) {

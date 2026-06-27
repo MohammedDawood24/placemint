@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ROLE_THEME } from '../../config/roles'
 import { Icons } from '../../components/Icons'
+import { checkDuplicateUser } from '../../utils/checkDuplicate'
 
 const DEPARTMENTS = ['CSE', 'ISE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AIML', 'DS']
 
@@ -33,6 +34,10 @@ export default function Register() {
 
     setBusy(true)
     try {
+      // Check for duplicate email/phone
+      const dupError = await checkDuplicateUser(form.email, form.phone)
+      if (dupError) { setError(dupError); setBusy(false); return }
+
       await registerStudent(form.email, form.password, {
         displayName: form.displayName,
         usn: form.usn,
