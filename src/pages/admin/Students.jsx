@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useCollection, where, orderBy, updateDocument, addDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import WhatsAppShare from '../../components/WhatsAppShare'
+import SemesterTable from '../../components/SemesterTable'
 import { createUserWithEmailAndPassword, signOut, getAuth } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
@@ -326,74 +327,8 @@ function StudentDetail({ student, onBack, onEdit }) {
           <InfoRow label="12th marks" value={s.twelfthMarks != null ? `${s.twelfthMarks}%` : '—'} mono />
         </div>
 
-        {/* Semester-wise marks */}
-        <div className="card p" style={{ gridColumn: '1 / -1' }}>
-          <div className="sec-head">
-            <h3>Semester-wise academic record</h3>
-            {semKeys.length > 0 && (() => {
-              const totalBacklogs = semKeys.reduce((sum, k) => sum + (semesters[k].backlogs || 0), 0)
-              const totalCleared = semKeys.reduce((sum, k) => sum + (semesters[k].backlogsCleared || 0), 0)
-              const active = totalBacklogs - totalCleared
-              return active > 0
-                ? <span className="badge b-rose">{active} active backlog{active > 1 ? 's' : ''}</span>
-                : totalBacklogs > 0
-                ? <span className="badge b-green">{Icons.check} All backlogs cleared</span>
-                : null
-            })()}
-          </div>
-          {semKeys.length === 0 ? (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-              No semester records uploaded yet.
-            </div>
-          ) : (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Semester</th><th>SGPA</th><th>Backlogs</th><th>Subjects</th><th>Status</th>
-                  <th>Marks card</th><th>Verified</th>
-                </tr>
-              </thead>
-              <tbody>
-                {semKeys.map(k => {
-                  const sem = semesters[k]
-                  const hasBacklogs = (sem.backlogs || 0) > 0
-                  const allCleared = hasBacklogs && (sem.backlogsCleared || 0) >= (sem.backlogs || 0)
-                  const activeCount = hasBacklogs ? (sem.backlogs || 0) - (sem.backlogsCleared || 0) : 0
-                  return (
-                    <tr key={k}>
-                      <td><b style={{ fontWeight: 600 }}>{k.replace('sem', 'Semester ')}</b></td>
-                      <td className="mono">{sem.marks ?? '—'}</td>
-                      <td>
-                        {hasBacklogs
-                          ? <span className="mono" style={{ color: allCleared ? 'var(--green)' : 'var(--rose)', fontWeight: 600 }}>
-                              {sem.backlogs}
-                            </span>
-                          : <span style={{ color: 'var(--muted)' }}>0</span>}
-                      </td>
-                      <td style={{ fontSize: 12.5, color: 'var(--muted)', maxWidth: 200 }}>
-                        {sem.backlogSubjects || '—'}
-                      </td>
-                      <td>
-                        {!hasBacklogs
-                          ? <span className="badge b-grey">Clear</span>
-                          : allCleared
-                          ? <span className="badge b-green">{Icons.check} Cleared ({sem.backlogsCleared}/{sem.backlogs})</span>
-                          : <span className="badge b-rose">{activeCount} active</span>}
-                      </td>
-                      <td>{sem.cardUrl
-                        ? <a href={sem.cardUrl} target="_blank" rel="noreferrer" className="btn btn-ghost"
-                            style={{ padding: '4px 10px', fontSize: 12 }}>View card</a>
-                        : <span style={{ color: 'var(--muted)', fontSize: 13 }}>Not uploaded</span>}</td>
-                      <td>{sem.verified
-                        ? <span className="badge b-green">{Icons.check} Verified</span>
-                        : <span className="badge b-gold">Pending</span>}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {/* Semester-wise marks — inline editable with approval */}
+        <SemesterTable student={s} isAdmin={true} />
       </div>
     </>
   )
