@@ -305,8 +305,14 @@ export default function SemesterTable({ student, isAdmin }) {
                     </td>
                     <td onClick={e => e.stopPropagation()}>{renderApproval(sem, k)}</td>
                     <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                      <button className="btn btn-ghost" onClick={() => startEdit(k)}
-                        style={{ padding: '4px 10px', fontSize: 12 }}>{Icons.gear} Edit</button>
+                      {isAdmin || isPending || sem.verified === 'rejected' || (!sem.verified && sem.verified !== true) ? (
+                        <button className="btn btn-ghost" onClick={() => startEdit(k)}
+                          style={{ padding: '4px 10px', fontSize: 12 }}>{Icons.gear} Edit</button>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                          {Icons.lock} Locked
+                        </span>
+                      )}
                     </td>
                   </tr>
 
