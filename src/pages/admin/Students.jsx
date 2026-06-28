@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useCollection, where, orderBy, updateDocument, addDocument, deleteDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
+import { formatPackage } from '../../utils/formatPackage'
 import WhatsAppShare from '../../components/WhatsAppShare'
 import SemesterTable from '../../components/SemesterTable'
 import { createUserWithEmailAndPassword, signOut, getAuth } from 'firebase/auth'
@@ -207,7 +208,7 @@ export default function AdminStudents() {
                       {s.tenthMarks ?? '—'}% · {s.twelfthMarks ?? '—'}%
                     </td>
                     <td><span className={`badge ${badge}`}>{label}</span></td>
-                    <td className="mono">{s.package ? `₹${s.package}L` : '—'}</td>
+                    <td className="mono">{formatPackage(s.package)}</td>
                   </tr>
                 )
               })}
@@ -340,7 +341,7 @@ function StudentDetail({ student, onBack, onEdit, onDelete }) {
           <div className="sec-head"><h3>Placement details</h3></div>
           <InfoRow label="Status" value={<span className={`badge ${badge}`}>{label}</span>} />
           <InfoRow label="Placed at" value={s.placedAt || '—'} />
-          <InfoRow label="Package" value={s.package ? `₹${s.package} LPA` : '—'} />
+          <InfoRow label="Package" value={formatPackage(s.package)} />
           <InfoRow label="CGPA" value={s.cgpa ?? '—'} mono />
           <MarksApproval label="10th marks" value={s.tenthMarks} field="tenthVerified"
             verified={s.tenthVerified} studentId={s.id} isAdmin={true} />

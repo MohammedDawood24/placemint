@@ -1,3 +1,4 @@
+import { formatPackage } from '../../utils/formatPackage'
 import { useAuth } from '../../contexts/AuthContext'
 import { useDocument, useCollection, where } from '../../hooks/useFirestore'
 import { Icons } from '../../components/Icons'
@@ -63,7 +64,7 @@ export default function StudentDashboard() {
           <div>
             <b style={{ color: 'var(--ink)' }}>Congratulations! You're placed at {student.placedAt}</b>
             <p style={{ color: '#0c7a4c' }}>
-              {student.package ? `Package: ₹${student.package} LPA · ` : ''}You can no longer apply for new drives.
+              {student.package ? `Package: ${formatPackage(student.package)} · ` : ''}You can no longer apply for new drives.
             </p>
           </div>
         </div>

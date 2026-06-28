@@ -4,6 +4,7 @@ import { db } from '../../config/firebase'
 import { useCollection, orderBy } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
+import { formatPackage, toLPA } from '../../utils/formatPackage'
 
 function Stat({ ic, color, soft, v, l, trend, dir }) {
   return (
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
   const totalCoords = allUsers.filter(u => u.role === 'coordinator').length
 
   // Highest package
-  const packages = placedStudents.map(s => s.package).filter(p => p != null)
+  const packages = placedStudents.map(s => toLPA(s.package)).filter(p => p > 0)
   const highestPkg = packages.length > 0 ? Math.max(...packages) : 0
   const avgPkg = packages.length > 0 ? (packages.reduce((a, b) => a + b, 0) / packages.length).toFixed(1) : 0
 
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
       const deptStudents = students.filter(s =>
         (s.department || '').trim().toUpperCase() === b.code.toUpperCase())
       const placed = deptStudents.filter(s => s.placementStatus === 'placed')
-      const pkgs = placed.map(s => s.package).filter(p => p != null)
+      const pkgs = placed.map(s => toLPA(s.package)).filter(p => p > 0)
       return {
         code: b.code, name: b.name,
         total: deptStudents.length, placed: placed.length,

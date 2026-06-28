@@ -4,6 +4,7 @@ import { useCollection, where, orderBy } from '../../hooks/useFirestore'
 import { useDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
+import { formatPackage, toLPA } from '../../utils/formatPackage'
 
 const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
 const STAGE_COLORS = ['#9aa1bd', '#4C5BD4', '#7B1FA2', '#1565C0', '#E0A43B', '#F57C00', '#15A86B']
@@ -38,7 +39,7 @@ export default function CompanyDashboard() {
   const openJobs = jobs.filter(j => j.status === 'open')
   const placedCount = activeApps.filter(a => a.stage >= 6).length
   const offerCount = activeApps.filter(a => a.stage >= 5).length
-  const packages = jobs.map(j => j.packageNumeric).filter(p => p > 0)
+  const packages = jobs.map(j => toLPA(j.packageNumeric)).filter(p => p > 0)
   const highestPkg = packages.length > 0 ? Math.max(...packages) : 0
 
   // Pipeline counts
@@ -125,7 +126,7 @@ export default function CompanyDashboard() {
           v={placedCount} l="Students placed"
           sub={offerCount > placedCount ? `${offerCount - placedCount} at offer stage` : null} />
         <Stat ic={Icons.spark} color="#C2185B" soft="#FCE4EC"
-          v={highestPkg > 0 ? `₹${highestPkg}L` : '—'} l="Package offered" />
+          v={highestPkg > 0 ? `₹${highestPkg} LPA` : '—'} l="Package offered" />
       </div>
 
       {/* Pipeline funnel */}
