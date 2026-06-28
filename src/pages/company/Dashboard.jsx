@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCollection, where, orderBy } from '../../hooks/useFirestore'
 import { useDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { formatPackage, toLPA } from '../../utils/formatPackage'
+import CompanyJobDetail from '../../components/CompanyJobDetail'
 
 const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
 const STAGE_COLORS = ['#9aa1bd', '#4C5BD4', '#7B1FA2', '#1565C0', '#E0A43B', '#F57C00', '#15A86B']
@@ -27,6 +28,13 @@ export default function CompanyDashboard() {
   const { data: jobs } = useCollection('jobs',
     [where('companyId', '==', userData?.id || 'x')], [userData?.id])
   const { data: allApps } = useCollection('applications', [], [])
+
+  const [viewJobId, setViewJobId] = useState(null)
+  const viewJob = viewJobId ? jobs.find(j => j.id === viewJobId) : null
+  if (viewJob) {
+    return <CompanyJobDetail job={viewJob}
+      onBack={() => setViewJobId(null)} />
+  }
 
   const jobIds = new Set(jobs.map(j => j.id))
   const jobMap = {}
@@ -226,6 +234,13 @@ export default function CompanyDashboard() {
                         </span>
                       )}
                     </div>
+                    <button onClick={() => setViewJobId(j.id)}
+                      style={{ marginTop: 10, width: '100%', padding: '8px', background: 'none',
+                        border: '1.5px solid var(--line)', borderRadius: 8, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 600, color: 'var(--indigo)', fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      {Icons.eye} View candidates &amp; manage
+                    </button>
                   </div>
                 )
               })}
