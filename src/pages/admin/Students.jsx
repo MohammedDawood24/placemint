@@ -438,11 +438,15 @@ function StudentForm({ student, onBack, onSaved }) {
     placementStatus: student?.placementStatus || 'eligible',
     placedAt: student?.placedAt || '',
     package: student?.package ?? '',
-    // Semester-wise marks
-    sem1: student?.semesters?.sem1?.marks ?? '', sem2: student?.semesters?.sem2?.marks ?? '',
-    sem3: student?.semesters?.sem3?.marks ?? '', sem4: student?.semesters?.sem4?.marks ?? '',
-    sem5: student?.semesters?.sem5?.marks ?? '', sem6: student?.semesters?.sem6?.marks ?? '',
-    sem7: student?.semesters?.sem7?.marks ?? '', sem8: student?.semesters?.sem8?.marks ?? '',
+    // Semester-wise marks + backlogs
+    sem1: student?.semesters?.sem1?.marks ?? '', sem1_bl: (student?.semesters?.sem1?.backlogs || []).map(b => b.subject).join(', '),
+    sem2: student?.semesters?.sem2?.marks ?? '', sem2_bl: (student?.semesters?.sem2?.backlogs || []).map(b => b.subject).join(', '),
+    sem3: student?.semesters?.sem3?.marks ?? '', sem3_bl: (student?.semesters?.sem3?.backlogs || []).map(b => b.subject).join(', '),
+    sem4: student?.semesters?.sem4?.marks ?? '', sem4_bl: (student?.semesters?.sem4?.backlogs || []).map(b => b.subject).join(', '),
+    sem5: student?.semesters?.sem5?.marks ?? '', sem5_bl: (student?.semesters?.sem5?.backlogs || []).map(b => b.subject).join(', '),
+    sem6: student?.semesters?.sem6?.marks ?? '', sem6_bl: (student?.semesters?.sem6?.backlogs || []).map(b => b.subject).join(', '),
+    sem7: student?.semesters?.sem7?.marks ?? '', sem7_bl: (student?.semesters?.sem7?.backlogs || []).map(b => b.subject).join(', '),
+    sem8: student?.semesters?.sem8?.marks ?? '', sem8_bl: (student?.semesters?.sem8?.backlogs || []).map(b => b.subject).join(', '),
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -474,11 +478,19 @@ function StudentForm({ student, onBack, onSaved }) {
       const semesters = {}
       for (let i = 1; i <= 8; i++) {
         const val = form[`sem${i}`]
-        if (val !== '') {
+        const blText = form[`sem${i}_bl`] || ''
+        if (val !== '' || blText.trim()) {
           const existing = student?.semesters?.[`sem${i}`] || {}
+          // Parse backlog subjects from comma-separated text
+          const existingBacklogs = existing.backlogs || []
+          const newSubjects = blText.split(',').map(s => s.trim()).filter(Boolean)
+          const backlogs = newSubjects.map(subj => {
+            const old = existingBacklogs.find(b => b.subject.toLowerCase() === subj.toLowerCase())
+            return old || { subject: subj, status: 'active', clearedDate: null }
+          })
           semesters[`sem${i}`] = {
-            marks: parseFloat(val),
-            backlogs: existing.backlogs || [],
+            marks: val !== '' ? parseFloat(val) : null,
+            backlogs,
             verified: 'approved',
             approvalComment: existing.approvalComment || '',
             cardUrl: existing.cardUrl || null,
@@ -656,34 +668,47 @@ function StudentForm({ student, onBack, onSaved }) {
           </div>
 
           <div className="sec-head" style={{ marginTop: 10 }}>
-            <h3>Semester-wise SGPA</h3>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Backlogs can be managed from the student detail view after creation</span>
+            <h3>Semester-wise SGPA &amp; Backlogs</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0 16px' }}>
-            {[1,2,3,4,5,6,7,8].map(i => (
-              <div className="field" key={i}>
-                <label>Sem {i}</label>
-                <input type="number" value={form[`sem${i}`]}
-                  onChange={e => {
-                    const val = e.target.value
-                    setForm(f => {
-                      const updated = { ...f, [`sem${i}`]: val }
-                      // Recalculate CGPA
-                      const sgpas = [1,2,3,4,5,6,7,8]
-                        .map(n => n === i ? val : updated[`sem${n}`])
-                        .filter(v => v !== '' && v !== null && v !== undefined)
-                        .map(Number)
-                        .filter(n => !isNaN(n) && n > 0)
-                      if (sgpas.length > 0) {
-                        updated.cgpa = (sgpas.reduce((a, b) => a + b, 0) / sgpas.length).toFixed(2)
-                        updated._cgpaAuto = true
-                      }
-                      return updated
-                    })
-                  }}
-                  placeholder="—" min="0" max="10" step="0.01" />
-              </div>
-            ))}
+          <table className="tbl">
+            <thead><tr><th>Sem</th><th style={{ width: 100 }}>SGPA</th><th>Backlog subjects (comma-separated)</th></tr></thead>
+            <tbody>
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <tr key={i}>
+                  <td><b style={{ fontWeight: 600 }}>Sem {i}</b></td>
+                  <td>
+                    <input type="number" value={form[`sem${i}`]}
+                      onChange={e => {
+                        const val = e.target.value
+                        setForm(f => {
+                          const updated = { ...f, [`sem${i}`]: val }
+                          const sgpas = [1,2,3,4,5,6,7,8]
+                            .map(n => n === i ? val : updated[`sem${n}`])
+                            .filter(v => v !== '' && v !== null && v !== undefined)
+                            .map(Number).filter(n => !isNaN(n) && n > 0)
+                          if (sgpas.length > 0) {
+                            updated.cgpa = (sgpas.reduce((a, b) => a + b, 0) / sgpas.length).toFixed(2)
+                          }
+                          return updated
+                        })
+                      }}
+                      placeholder="—" min="0" max="10" step="0.01"
+                      style={{ width: '100%', padding: '7px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }} />
+                  </td>
+                  <td>
+                    <input value={form[`sem${i}_bl`]}
+                      onChange={e => set(`sem${i}_bl`, e.target.value)}
+                      placeholder="e.g. Maths, Physics, DSA"
+                      style={{ width: '100%', padding: '7px 10px', border: '1.5px solid var(--line)',
+                        borderRadius: 8, fontSize: 13 }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+            Enter subjects separated by commas. Previously cleared backlogs are preserved. You can also manage backlogs from the detail view after creation.
           </div>
         </div>
 
