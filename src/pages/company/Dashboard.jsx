@@ -31,10 +31,6 @@ export default function CompanyDashboard() {
 
   const [viewJobId, setViewJobId] = useState(null)
   const viewJob = viewJobId ? jobs.find(j => j.id === viewJobId) : null
-  if (viewJob) {
-    return <CompanyJobDetail job={viewJob}
-      onBack={() => setViewJobId(null)} />
-  }
 
   const jobIds = new Set(jobs.map(j => j.id))
   const jobMap = {}
@@ -94,6 +90,11 @@ export default function CompanyDashboard() {
   const upcomingDrives = jobs.filter(j =>
     j.status === 'open' && j.driveDate?.seconds && j.driveDate.seconds * 1000 > Date.now()
   ).sort((a, b) => (a.driveDate?.seconds || 0) - (b.driveDate?.seconds || 0))
+
+  // Job detail view
+  if (viewJob) {
+    return <CompanyJobDetail job={viewJob} onBack={() => setViewJobId(null)} />
+  }
 
   return (
     <>
