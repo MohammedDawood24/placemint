@@ -12,6 +12,7 @@ import AdminJobs from '../pages/admin/Jobs'
 import AdminReports from '../pages/admin/Reports'
 import AdminSettings from '../pages/admin/Settings'
 import AdminCoordinators from '../pages/admin/Coordinators'
+import AdminCompanies from '../pages/admin/Companies'
 
 import HodDashboard from '../pages/hod/Dashboard'
 import HodApprovals from '../pages/hod/Approvals'
@@ -19,6 +20,7 @@ import HodApprovals from '../pages/hod/Approvals'
 import CompanyDashboard from '../pages/company/Dashboard'
 import CompanyJobs from '../pages/company/Jobs'
 import CompanyPipeline from '../pages/company/Pipeline'
+import CompanyProfile from '../pages/company/Profile'
 
 import StudentDashboard from '../pages/student/Dashboard'
 import StudentJobs from '../pages/student/Jobs'
@@ -98,7 +100,7 @@ const SCREENS = {
     jobs: AdminJobs,
     reports: AdminReports,
     coords: AdminCoordinators,
-    companies: () => <Coming label="Manage companies" />,
+    companies: AdminCompanies,
     donations: () => <Coming label="Donations" />,
     settings: AdminSettings,
   },
@@ -119,7 +121,7 @@ const SCREENS = {
     dash: CompanyDashboard,
     jobs: CompanyJobs,
     pipeline: CompanyPipeline,
-    profile: () => <Coming label="Company profile" />,
+    profile: CompanyProfile,
   },
   student: {
     dash: StudentDashboard,
