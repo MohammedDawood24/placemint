@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCollection, where, orderBy, addDocument, updateDocument } from '../../hooks/useFirestore'
 import { useSite } from '../../contexts/SiteContext'
 import { Icons } from '../../components/Icons'
+import RichEditor from '../../components/RichEditor'
 import toast from 'react-hot-toast'
 
 const STATUS_MAP = {
@@ -89,7 +90,9 @@ function CompanyJobForm({ job, companyName, companyId, branches, onBack, onSaved
   const [form, setForm] = useState({
     role: job?.role || '', package: job?.package || '',
     packageNumeric: job?.packageNumeric || '',
-    minPercentage: job?.minPercentage || '', minCgpa: job?.minCgpa || '',
+    min10th: job?.min10th || job?.minPercentage || '',
+    min12th: job?.min12th || job?.minPercentage || '',
+    minCgpa: job?.minCgpa || '',
     eligibleDepartments: job?.eligibleDepartments || [],
     driveType: job?.driveType || 'on-campus',
     driveDate: job?.driveDate?.seconds ? new Date(job.driveDate.seconds * 1000).toISOString().slice(0, 10) : '',
@@ -116,7 +119,8 @@ function CompanyJobForm({ job, companyName, companyId, branches, onBack, onSaved
         companyName, companyId, role: form.role,
         package: form.package || null,
         packageNumeric: form.packageNumeric ? parseFloat(form.packageNumeric) : null,
-        minPercentage: form.minPercentage ? parseFloat(form.minPercentage) : null,
+        min10th: form.min10th ? parseFloat(form.min10th) : null,
+        min12th: form.min12th ? parseFloat(form.min12th) : null,
         minCgpa: form.minCgpa ? parseFloat(form.minCgpa) : null,
         eligibleDepartments: allDepts ? [] : form.eligibleDepartments,
         driveType: form.driveType,
@@ -143,8 +147,10 @@ function CompanyJobForm({ job, companyName, companyId, branches, onBack, onSaved
               <input value={form.role} onChange={e => set('role', e.target.value)} placeholder="Systems Engineer" /></div>
             <div className="field"><label>Package</label>
               <input value={form.package} onChange={e => set('package', e.target.value)} placeholder="6.5 LPA" /></div>
-            <div className="field"><label>Min 10th/12th %</label>
-              <input type="number" value={form.minPercentage} onChange={e => set('minPercentage', e.target.value)} placeholder="60" /></div>
+            <div className="field"><label>Min 10th %</label>
+              <input type="number" value={form.min10th} onChange={e => set('min10th', e.target.value)} placeholder="60" /></div>
+            <div className="field"><label>Min 12th %</label>
+              <input type="number" value={form.min12th} onChange={e => set('min12th', e.target.value)} placeholder="60" /></div>
             <div className="field"><label>Min CGPA</label>
               <input type="number" value={form.minCgpa} onChange={e => set('minCgpa', e.target.value)} placeholder="7.0" step="0.1" /></div>
             <div className="field"><label>Drive type</label>
@@ -155,9 +161,8 @@ function CompanyJobForm({ job, companyName, companyId, branches, onBack, onSaved
               <input type="date" value={form.driveDate} onChange={e => set('driveDate', e.target.value)} /></div>
           </div>
           <div className="field"><label>Description</label>
-            <textarea value={form.description} onChange={e => set('description', e.target.value)}
-              placeholder="Details..." style={{ width: '100%', minHeight: 80, padding: '10px 14px',
-                border: '1.5px solid var(--line)', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} /></div>
+            <RichEditor value={form.description} onChange={v => set('description', v)}
+              placeholder="Role details, requirements..." /></div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, marginBottom: 10, cursor: 'pointer' }}>
             <input type="checkbox" checked={allDepts} onChange={e => setAllDepts(e.target.checked)} style={{ width: 16, height: 16 }} />
             All branches eligible</label>

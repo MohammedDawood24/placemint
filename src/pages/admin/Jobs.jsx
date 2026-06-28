@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useCollection, where, orderBy, addDocument, updateDocument, deleteDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
+import RichEditor from '../../components/RichEditor'
 import toast from 'react-hot-toast'
 
 const STATUS_OPTIONS = ['draft', 'open', 'closed', 'completed']
@@ -118,7 +119,8 @@ export default function AdminJobs() {
                 </div>
                 <div className="job-meta">
                   {j.package && <span className="chip">₹ {j.package}</span>}
-                  {j.minPercentage && <span className="chip">Min {j.minPercentage}%</span>}
+                  {j.min10th && <span className="chip">10th ≥ {j.min10th}%</span>}
+                  {j.min12th && <span className="chip">12th ≥ {j.min12th}%</span>}
                   {j.minCgpa && <span className="chip">CGPA ≥ {j.minCgpa}</span>}
                 </div>
                 <div className="job-meta">
@@ -209,7 +211,8 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
           {j.package && <span className="chip">₹ {j.package}</span>}
-          {j.minPercentage && <span className="chip">Min 10th/12th: {j.minPercentage}%</span>}
+          {j.min10th && <span className="chip">Min 10th: {j.min10th}%</span>}
+          {j.min12th && <span className="chip">Min 12th: {j.min12th}%</span>}
           {j.minCgpa && <span className="chip">Min CGPA: {j.minCgpa}</span>}
           <span className="chip">{j.driveType || 'On-campus'}</span>
           {j.driveDate?.seconds && <span className="chip">Drive: {new Date(j.driveDate.seconds * 1000).toLocaleDateString()}</span>}
@@ -221,7 +224,9 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
           </div>
         )}
         {j.description && (
-          <p style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.6 }}>{j.description}</p>
+          <div style={{ marginTop: 12, fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.6,
+            borderTop: '1px solid var(--line)', paddingTop: 14 }}
+            dangerouslySetInnerHTML={{ __html: j.description }} />
         )}
 
         {/* Status actions */}
@@ -326,7 +331,8 @@ function JobForm({ job, branches, companies, onBack, onSaved }) {
     role: job?.role || '',
     package: job?.package || '',
     packageNumeric: job?.packageNumeric || '',
-    minPercentage: job?.minPercentage || '',
+    min10th: job?.min10th || job?.minPercentage || '',
+    min12th: job?.min12th || job?.minPercentage || '',
     minCgpa: job?.minCgpa || '',
     eligibleDepartments: job?.eligibleDepartments || [],
     driveType: job?.driveType || 'on-campus',
@@ -364,7 +370,8 @@ function JobForm({ job, branches, companies, onBack, onSaved }) {
         role: form.role,
         package: form.package || null,
         packageNumeric: form.packageNumeric ? parseFloat(form.packageNumeric) : null,
-        minPercentage: form.minPercentage ? parseFloat(form.minPercentage) : null,
+        min10th: form.min10th ? parseFloat(form.min10th) : null,
+        min12th: form.min12th ? parseFloat(form.min12th) : null,
         minCgpa: form.minCgpa ? parseFloat(form.minCgpa) : null,
         eligibleDepartments: allDepts ? [] : form.eligibleDepartments,
         driveType: form.driveType,
@@ -439,10 +446,15 @@ function JobForm({ job, branches, companies, onBack, onSaved }) {
         {/* Eligibility */}
         <div className="card p" style={{ marginBottom: 16 }}>
           <div className="sec-head"><h3>Eligibility criteria</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 20px' }}>
             <div className="field">
-              <label>Minimum 10th / 12th marks (%)</label>
-              <input type="number" value={form.minPercentage} onChange={e => set('minPercentage', e.target.value)}
+              <label>Minimum 10th marks (%)</label>
+              <input type="number" value={form.min10th} onChange={e => set('min10th', e.target.value)}
+                placeholder="e.g. 60" min="0" max="100" />
+            </div>
+            <div className="field">
+              <label>Minimum 12th marks (%)</label>
+              <input type="number" value={form.min12th} onChange={e => set('min12th', e.target.value)}
                 placeholder="e.g. 60" min="0" max="100" />
             </div>
             <div className="field">
@@ -501,10 +513,8 @@ function JobForm({ job, branches, companies, onBack, onSaved }) {
           </div>
           <div className="field">
             <label>Description</label>
-            <textarea value={form.description} onChange={e => set('description', e.target.value)}
-              placeholder="Role details, requirements, process..."
-              style={{ width: '100%', minHeight: 100, padding: '10px 14px', border: '1.5px solid var(--line)',
-                borderRadius: 10, fontSize: 14, fontFamily: 'inherit', lineHeight: 1.6, resize: 'vertical' }} />
+            <RichEditor value={form.description} onChange={v => set('description', v)}
+              placeholder="Role details, requirements, interview process..." />
           </div>
           <div className="field" style={{ maxWidth: 200 }}>
             <label>Status</label>

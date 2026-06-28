@@ -22,10 +22,17 @@ export default function StudentJobs() {
     jobs.forEach(j => {
       if (!student) { e.push({ ...j, reason: null }); return }
       const reasons = []
-      if (j.minPercentage && student.tenthMarks && student.tenthMarks < j.minPercentage)
-        reasons.push(`10th marks (${student.tenthMarks}% < ${j.minPercentage}%)`)
-      if (j.minPercentage && student.twelfthMarks && student.twelfthMarks < j.minPercentage)
-        reasons.push(`12th marks (${student.twelfthMarks}% < ${j.minPercentage}%)`)
+      if (j.min10th && student.tenthMarks && student.tenthMarks < j.min10th)
+        reasons.push(`10th marks (${student.tenthMarks}% < ${j.min10th}%)`)
+      if (j.min12th && student.twelfthMarks && student.twelfthMarks < j.min12th)
+        reasons.push(`12th marks (${student.twelfthMarks}% < ${j.min12th}%)`)
+      // Legacy support for old minPercentage field
+      if (!j.min10th && !j.min12th && j.minPercentage) {
+        if (student.tenthMarks && student.tenthMarks < j.minPercentage)
+          reasons.push(`10th marks (${student.tenthMarks}% < ${j.minPercentage}%)`)
+        if (student.twelfthMarks && student.twelfthMarks < j.minPercentage)
+          reasons.push(`12th marks (${student.twelfthMarks}% < ${j.minPercentage}%)`)
+      }
       if (j.minCgpa && student.cgpa && student.cgpa < j.minCgpa)
         reasons.push(`CGPA (${student.cgpa} < ${j.minCgpa})`)
       if (j.eligibleDepartments?.length > 0 && student.department &&
@@ -106,9 +113,9 @@ export default function StudentJobs() {
                   {j.driveDate?.seconds && <span className="chip">{new Date(j.driveDate.seconds * 1000).toLocaleDateString()}</span>}
                 </div>
                 {j.description && (
-                  <p style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5, margin: 0 }}>
-                    {j.description.length > 120 ? j.description.slice(0, 120) + '…' : j.description}
-                  </p>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.5 }}
+                    dangerouslySetInnerHTML={{ __html: j.description.length > 150
+                      ? j.description.slice(0, 150) + '…' : j.description }} />
                 )}
                 <div className="job-foot">
                   <span className="badge b-green">{Icons.check} Eligible</span>
