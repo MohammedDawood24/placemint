@@ -16,11 +16,13 @@ import AdminCompanies from '../pages/admin/Companies'
 
 import HodDashboard from '../pages/hod/Dashboard'
 import HodApprovals from '../pages/hod/Approvals'
+import HodReports from '../pages/hod/Reports'
 
 import CompanyDashboard from '../pages/company/Dashboard'
 import CompanyJobs from '../pages/company/Jobs'
 import CompanyPipeline from '../pages/company/Pipeline'
 import CompanyProfile from '../pages/company/Profile'
+import CompanyReports from '../pages/company/Reports'
 
 import StudentDashboard from '../pages/student/Dashboard'
 import StudentJobs from '../pages/student/Jobs'
@@ -79,6 +81,7 @@ const NAV = {
     { g: 'Recruiting', items: [
       { k: 'jobs', label: 'My job postings', ic: Icons.brief },
       { k: 'pipeline', label: 'Candidate status', ic: Icons.users },
+      { k: 'reports', label: 'Reports', ic: Icons.chart },
       { k: 'profile', label: 'Company profile', ic: Icons.build },
     ]},
   ],
@@ -109,7 +112,7 @@ const SCREENS = {
     approvals: HodApprovals,
     students: AdminStudents,
     activities: () => <Coming label="Activities" />,
-    reports: AdminReports,
+    reports: HodReports,
   },
   coordinator: {
     dash: HodDashboard,
@@ -121,6 +124,7 @@ const SCREENS = {
     dash: CompanyDashboard,
     jobs: CompanyJobs,
     pipeline: CompanyPipeline,
+    reports: CompanyReports,
     profile: CompanyProfile,
   },
   student: {
