@@ -350,7 +350,7 @@ function StudentDetail({ student, onBack, onEdit, onDelete }) {
         </div>
 
         {/* Semester-wise marks — inline editable with approval */}
-        <SemesterTable student={s} isAdmin={true} />
+        <SemesterTable student={s} isAdmin={true} currentSem={parseInt(s.semester) || 0} />
       </div>
     </>
   )
@@ -477,7 +477,8 @@ function StudentForm({ student, onBack, onSaved }) {
       }
       // Build semesters map
       const semesters = {}
-      for (let i = 1; i <= 8; i++) {
+      const semCount = form.semester ? parseInt(form.semester) : 8
+      for (let i = 1; i <= semCount; i++) {
         const val = form[`sem${i}`]
         const blText = form[`sem${i}_bl`] || ''
         if (val !== '' || blText.trim()) {
@@ -670,20 +671,23 @@ function StudentForm({ student, onBack, onSaved }) {
 
           <div className="sec-head" style={{ marginTop: 10 }}>
             <h3>Semester-wise SGPA &amp; Backlogs</h3>
+            {!form.semester && <span style={{ fontSize: 12, color: 'var(--rose)' }}>Set current semester above to show rows</span>}
           </div>
+          {parseInt(form.semester) > 0 && (
           <table className="tbl">
             <thead><tr><th>Sem</th><th style={{ width: 100 }}>SGPA</th><th>Backlog subjects (comma-separated)</th></tr></thead>
             <tbody>
-              {[1,2,3,4,5,6,7,8].map(i => (
+              {Array.from({ length: parseInt(form.semester) || 0 }, (_, idx) => idx + 1).map(i => (
                 <tr key={i}>
                   <td><b style={{ fontWeight: 600 }}>Sem {i}</b></td>
                   <td>
                     <input type="number" value={form[`sem${i}`]}
                       onChange={e => {
                         const val = e.target.value
+                        const semCount = parseInt(form.semester) || 8
                         setForm(f => {
                           const updated = { ...f, [`sem${i}`]: val }
-                          const sgpas = [1,2,3,4,5,6,7,8]
+                          const sgpas = Array.from({ length: semCount }, (_, idx) => idx + 1)
                             .map(n => n === i ? val : updated[`sem${n}`])
                             .filter(v => v !== '' && v !== null && v !== undefined)
                             .map(Number).filter(n => !isNaN(n) && n > 0)
@@ -698,7 +702,7 @@ function StudentForm({ student, onBack, onSaved }) {
                         borderRadius: 8, fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }} />
                   </td>
                   <td>
-                    <input value={form[`sem${i}_bl`]}
+                    <input value={form[`sem${i}_bl`] || ''}
                       onChange={e => set(`sem${i}_bl`, e.target.value)}
                       placeholder="e.g. Maths, Physics, DSA"
                       style={{ width: '100%', padding: '7px 10px', border: '1.5px solid var(--line)',
@@ -708,6 +712,7 @@ function StudentForm({ student, onBack, onSaved }) {
               ))}
             </tbody>
           </table>
+          )}
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
             Enter subjects separated by commas. Previously cleared backlogs are preserved. You can also manage backlogs from the detail view after creation.
           </div>

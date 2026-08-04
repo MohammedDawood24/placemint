@@ -33,11 +33,19 @@ function migrateSem(sem) {
   return { ...sem, backlogs: arr }
 }
 
-export default function SemesterTable({ student, isAdmin }) {
+export default function SemesterTable({ student, isAdmin, currentSem }) {
   const rawSemesters = student.semesters || {}
   const semesters = {}
   Object.keys(rawSemesters).forEach(k => { semesters[k] = migrateSem(rawSemesters[k]) })
-  const semKeys = Object.keys(semesters).sort()
+
+  // Generate keys based on currentSem (show semesters 1..currentSem), fallback to existing keys
+  const maxSem = currentSem || parseInt(student.semester) || Object.keys(semesters).length || 0
+  const semKeys = []
+  for (let i = 1; i <= maxSem; i++) {
+    const k = `sem${i}`
+    semKeys.push(k)
+    if (!semesters[k]) semesters[k] = { marks: null, backlogs: [], verified: null }
+  }
 
   const [expandedKey, setExpandedKey] = useState(null)
   const [editKey, setEditKey] = useState(null)
@@ -144,6 +152,12 @@ export default function SemesterTable({ student, isAdmin }) {
   // ─── APPROVAL RENDERER (plain function, not a component — avoids remount on state change) ───
   function renderApproval(sem, k) {
     const v = sem.verified
+    // Never submitted — no marks entered yet
+    if (v === null || v === undefined) {
+      return sem.marks != null
+        ? <span className="badge b-grey">Not reviewed</span>
+        : <span style={{ fontSize: 12, color: 'var(--muted)' }}>—</span>
+    }
     if (v === 'approved' || v === true) return <span className="badge b-green">{Icons.check} Approved</span>
     if (v === 'rejected') {
       return (
@@ -200,7 +214,9 @@ export default function SemesterTable({ student, isAdmin }) {
 
       {semKeys.length === 0 ? (
         <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-          {isAdmin ? 'No semester records uploaded yet.' : 'No semester records yet. Your admin or HOD will add these.'}
+          {isAdmin
+            ? 'Set the current semester field to show semester rows.'
+            : 'Update your current semester in the profile section above to see semester rows.'}
         </div>
       ) : (
         <table className="tbl">

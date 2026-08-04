@@ -164,7 +164,9 @@ export default function StudentProfile() {
       </div>
 
       {/* Semester table — student edits go to pending, admin edits auto-approve */}
-      {student && <div style={{ marginTop: 16 }}><SemesterTable student={student} isAdmin={false} /></div>}
+      {student && <div style={{ marginTop: 16 }}>
+        <SemesterTable student={student} isAdmin={false} currentSem={parseInt(form.semester) || parseInt(student.semester) || 0} />
+      </div>}
     </>
   )
 }
