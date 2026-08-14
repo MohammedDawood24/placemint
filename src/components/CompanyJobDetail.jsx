@@ -25,6 +25,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
   const [offerModal, setOfferModal] = useState(null) // application being offered
   const [offerForm, setOfferForm] = useState({ details: '', letterUrl: '', letterFile: null, letterFileName: '', letterMode: 'upload' })
   const [expandedApp, setExpandedApp] = useState(null)
+  const [editOfferApp, setEditOfferApp] = useState(null)
 
   async function advance(app) {
     const newStage = app.stage + 1
@@ -87,12 +88,38 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
   function handleFileUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 800000) { toast.error('File too large. Max 800KB for Firestore storage. Use a link for larger files.'); return }
+    if (file.size > 800000) { toast.error('File too large. Max 800KB. Use a link for larger files.'); return }
     const reader = new FileReader()
     reader.onload = () => {
       setOfferForm(f => ({ ...f, letterFile: reader.result, letterFileName: file.name }))
     }
     reader.readAsDataURL(file)
+  }
+
+  function startEditOffer(app) {
+    setOfferForm({
+      details: app.offerDetails || '',
+      letterUrl: app.offerLetterUrl || '',
+      letterFile: app.offerLetterFile || null,
+      letterFileName: app.offerLetterFileName || '',
+      letterMode: app.offerLetterFile ? 'upload' : 'link',
+    })
+    setEditOfferApp(app)
+  }
+
+  async function saveUpdatedOffer() {
+    if (!editOfferApp) return
+    try {
+      await updateDocument('applications', editOfferApp.id, {
+        offerDetails: offerForm.details,
+        offerLetterUrl: offerForm.letterMode === 'link' ? offerForm.letterUrl : (editOfferApp.offerLetterUrl || ''),
+        offerLetterFile: offerForm.letterMode === 'upload' && offerForm.letterFile ? offerForm.letterFile : (editOfferApp.offerLetterFile || null),
+        offerLetterFileName: offerForm.letterFileName || editOfferApp.offerLetterFileName || '',
+        offerStatus: 'pending_student',
+      })
+      toast.success('Offer updated — student will see the new details')
+      setEditOfferApp(null)
+    } catch (e) { toast.error('Failed: ' + e.message) }
   }
 
   async function approveAcceptance(app) {
@@ -329,6 +356,18 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
                           ) : <span style={{ fontSize: 12, color: 'var(--muted)' }}>Awaiting student response</span>}
                         </div>
                       </div>
+                      {/* Edit offer button — only if still at offer stage */}
+                      {a.stage === 5 && (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                          <button className="btn btn-ghost" onClick={e => { e.stopPropagation(); startEditOffer(a) }}
+                            style={{ fontSize: 12 }}>
+                            {Icons.gear} Update offer details
+                          </button>
+                          <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 10 }}>
+                            Re-upload letter or update offer text — student will be re-notified
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </td></tr>
                 )}
@@ -437,6 +476,70 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
             <button className="btn btn-ghost" onClick={() => setOfferModal(null)}>Cancel</button>
             <button className="btn btn-pri" onClick={submitOffer}
               disabled={!offerForm.details.trim()}>📋 Send offer</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit offer modal */}
+      {editOfferApp && (
+        <Modal title={`Update offer for ${editOfferApp.studentName}`} onClose={() => setEditOfferApp(null)}>
+          <div className="field">
+            <label style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'block' }}>Offer details</label>
+            <textarea value={offerForm.details}
+              onChange={e => setOfferForm(f => ({ ...f, details: e.target.value }))}
+              placeholder="Role, package breakdown, joining date, location, terms..."
+              style={{ width: '100%', minHeight: 120, padding: '12px 14px', border: '1.5px solid var(--line)',
+                borderRadius: 10, fontSize: 14, fontFamily: 'inherit', lineHeight: 1.6, resize: 'vertical' }} />
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <label style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, display: 'block' }}>
+              Offer letter <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional)</span>
+            </label>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: '#f3f4fa', borderRadius: 10, padding: 3 }}>
+              {['upload', 'link'].map(m => (
+                <button key={m} type="button"
+                  onClick={() => setOfferForm(f => ({ ...f, letterMode: m }))}
+                  style={{ flex: 1, padding: '8px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    background: offerForm.letterMode === m ? '#fff' : 'transparent',
+                    color: offerForm.letterMode === m ? 'var(--indigo)' : 'var(--muted)',
+                    boxShadow: offerForm.letterMode === m ? '0 1px 4px rgba(0,0,0,.08)' : 'none',
+                  }}>{m === 'upload' ? '📎 Upload file' : '🔗 Add link'}</button>
+              ))}
+            </div>
+            {offerForm.letterMode === 'upload' ? (
+              offerForm.letterFile ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                  background: 'var(--green-soft)', borderRadius: 10, border: '1px solid #b5e6cf' }}>
+                  <span style={{ fontSize: 22 }}>📄</span>
+                  <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{offerForm.letterFileName}</b></div>
+                  <button type="button" onClick={() => setOfferForm(f => ({ ...f, letterFile: null, letterFileName: '' }))}
+                    style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 16 }}>×</button>
+                </div>
+              ) : (
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                  padding: '20px 16px', border: '2px dashed var(--line)', borderRadius: 12, cursor: 'pointer', background: '#fbfbfe' }}>
+                  <span style={{ fontSize: 28 }}>📎</span>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>Click to upload (max 800KB)</span>
+                  <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onChange={handleFileUpload} style={{ display: 'none' }} />
+                </label>
+              )
+            ) : (
+              <input value={offerForm.letterUrl}
+                onChange={e => setOfferForm(f => ({ ...f, letterUrl: e.target.value }))}
+                placeholder="https://drive.google.com/... or OneDrive link"
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--line)',
+                  borderRadius: 10, fontSize: 14, fontFamily: 'inherit' }} />
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <button className="btn btn-ghost" onClick={() => setEditOfferApp(null)}>Cancel</button>
+            <button className="btn btn-pri" onClick={saveUpdatedOffer}
+              disabled={!offerForm.details.trim()}>📋 Update offer</button>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10, padding: '8px 10px',
+            background: '#f8f9fc', borderRadius: 8 }}>
+            Updating the offer will reset the student's response status to "pending" so they can review and re-accept the new terms.
           </div>
         </Modal>
       )}

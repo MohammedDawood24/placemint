@@ -123,6 +123,93 @@ export default function CompanyDashboard() {
         </div>
       )}
 
+      {/* ──── OFFER STATUS CARDS ──── */}
+      {(() => {
+        const offersOut = myApps.filter(a => a.stage >= 5 && a.status !== 'rejected')
+        const pendingResponse = offersOut.filter(a => a.offerStatus === 'pending_student')
+        const accepted = offersOut.filter(a => a.offerStatus === 'accepted')
+        const acceptedPending = offersOut.filter(a => a.offerStatus === 'accepted_pending_admin')
+        const declined = offersOut.filter(a => a.offerStatus === 'rejected')
+        if (offersOut.length === 0) return null
+        return (
+          <div className="card p" style={{ marginBottom: 16 }}>
+            <div className="sec-head">
+              <h3>Offer status tracker</h3>
+              <div className="sub">{offersOut.length} offer{offersOut.length !== 1 ? 's' : ''} sent</div>
+            </div>
+
+            {/* Summary badges */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+              {pendingResponse.length > 0 && (
+                <span className="chip" style={{ background: 'var(--gold-soft)', color: '#9a6c12', fontWeight: 600 }}>
+                  ⏳ {pendingResponse.length} awaiting response
+                </span>
+              )}
+              {acceptedPending.length > 0 && (
+                <span className="chip" style={{ background: '#fff3e0', color: '#e65100', fontWeight: 600 }}>
+                  📋 {acceptedPending.length} accepted — admin reviewing
+                </span>
+              )}
+              {accepted.length > 0 && (
+                <span className="chip" style={{ background: 'var(--green-soft)', color: '#0c7a4c', fontWeight: 600 }}>
+                  ✓ {accepted.length} accepted &amp; confirmed
+                </span>
+              )}
+              {declined.length > 0 && (
+                <span className="chip" style={{ background: 'var(--rose-soft)', color: '#b83a3e', fontWeight: 600 }}>
+                  ✗ {declined.length} declined
+                </span>
+              )}
+            </div>
+
+            {/* Individual offer cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {offersOut.map(a => {
+                const job = jobMap[a.jobId] || {}
+                const statusColor = a.offerStatus === 'accepted' ? 'var(--green-soft)'
+                  : a.offerStatus === 'rejected' ? 'var(--rose-soft)'
+                  : '#fffbf0'
+                const statusBorder = a.offerStatus === 'accepted' ? '#b5e6cf'
+                  : a.offerStatus === 'rejected' ? '#f5c6c8'
+                  : '#f0dcae'
+                return (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 14px', background: statusColor, borderRadius: 10,
+                    border: `1px solid ${statusBorder}` }}>
+                    <div className="av-sm">{initials(a.studentName)}</div>
+                    <div style={{ flex: 1 }}>
+                      <b style={{ fontSize: 13.5 }}>{a.studentName}</b>
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                        {job.role}{a.department ? ` · ${a.department}` : ''}
+                      </div>
+                    </div>
+                    {a.offerStatus === 'pending_student' && (
+                      <span className="badge b-gold" style={{ fontSize: 11 }}>⏳ Awaiting response</span>
+                    )}
+                    {a.offerStatus === 'accepted_pending_admin' && (
+                      <span className="badge b-gold" style={{ fontSize: 11 }}>📋 Accepted — admin reviewing</span>
+                    )}
+                    {a.offerStatus === 'accepted' && (
+                      <span className="badge b-green" style={{ fontSize: 11 }}>✓ Accepted &amp; confirmed</span>
+                    )}
+                    {a.offerStatus === 'rejected' && (
+                      <div style={{ textAlign: 'right' }}>
+                        <span className="badge b-rose" style={{ fontSize: 11 }}>✗ Declined</span>
+                        {a.studentResponse && (
+                          <div style={{ fontSize: 11, color: 'var(--rose)', marginTop: 2 }}>"{a.studentResponse}"</div>
+                        )}
+                      </div>
+                    )}
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }}
+                      onClick={() => setViewJobId(a.jobId)}>View details</button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Key stats */}
       <div className="cards-row c4" style={{ marginBottom: 16 }}>
         <Stat ic={Icons.brief} color="#4C5BD4" soft="#EEF0FF"
