@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useCollection, where, updateDocument } from '../hooks/useFirestore'
 import { Icons, initials } from './Icons'
 import { formatPackage } from '../utils/formatPackage'
@@ -24,6 +24,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
 
   const [offerModal, setOfferModal] = useState(null) // application being offered
   const [offerForm, setOfferForm] = useState({ details: '', letterUrl: '', letterFile: null, letterFileName: '', letterMode: 'upload' })
+  const [expandedApp, setExpandedApp] = useState(null)
 
   async function advance(app) {
     const newStage = app.stage + 1
@@ -212,9 +213,15 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
             </thead>
             <tbody>
               {active.sort((a, b) => b.stage - a.stage).map(a => (
-                <tr key={a.id} style={a.stage >= 6 ? { background: 'var(--green-soft)' } : {}}>
+                <React.Fragment key={a.id}>
+                <tr style={{ ...(a.stage >= 6 ? { background: 'var(--green-soft)' } : {}),
+                  ...(a.stage >= 5 ? { cursor: 'pointer' } : {}) }}
+                  onClick={() => a.stage >= 5 && setExpandedApp(expandedApp === a.id ? null : a.id)}>
                   <td><div className="cell-u"><div className="av-sm">{initials(a.studentName)}</div>
-                    <div><b>{a.studentName}</b></div></div></td>
+                    <div><b>{a.studentName}</b>
+                    {a.stage >= 5 && <span style={{ fontSize: 10, color: 'var(--indigo)', marginLeft: 6 }}>
+                      {expandedApp === a.id ? '▼' : '▶'} offer info</span>}
+                    </div></div></td>
                   <td className="mono" style={{ fontSize: 12 }}>{a.studentUsn || '—'}</td>
                   <td>{a.department || '—'}</td>
                   <td className="mono">{a.cgpa ?? '—'}</td>
@@ -281,6 +288,51 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
                     )}
                   </td>
                 </tr>
+                {expandedApp === a.id && a.stage >= 5 && (
+                  <tr><td colSpan="7" style={{ padding: 0 }}>
+                    <div style={{ padding: '14px 20px', background: '#f8f9fc', borderTop: '1px dashed var(--line)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase',
+                            letterSpacing: '0.5px', marginBottom: 6 }}>Offer details</div>
+                          {a.offerDetails
+                            ? <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink-2)', margin: 0,
+                                whiteSpace: 'pre-wrap', background: '#fff', padding: '10px 12px', borderRadius: 8,
+                                border: '1px solid var(--line)' }}>{a.offerDetails}</p>
+                            : <span style={{ fontSize: 12, color: 'var(--muted)' }}>No details provided</span>}
+                          {(a.offerLetterUrl || a.offerLetterFile) && (
+                            <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
+                              {a.offerLetterUrl && <a href={a.offerLetterUrl} target="_blank" rel="noreferrer"
+                                style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>🔗 Offer letter (link)</a>}
+                              {a.offerLetterFile && <a href={a.offerLetterFile} download={a.offerLetterFileName || 'offer'}
+                                style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>📄 Download offer letter</a>}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase',
+                            letterSpacing: '0.5px', marginBottom: 6 }}>Student response</div>
+                          {a.consentText ? (
+                            <div style={{ fontSize: 13, lineHeight: 1.5, color: '#0c7a4c', background: 'var(--green-soft)',
+                              padding: '10px 12px', borderRadius: 8, border: '1px solid #b5e6cf' }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>✓ Accepted
+                                {a.studentRespondedAt && ` · ${new Date(a.studentRespondedAt.seconds
+                                  ? a.studentRespondedAt.seconds * 1000 : a.studentRespondedAt).toLocaleDateString()}`}</div>
+                              {a.consentText}
+                            </div>
+                          ) : a.offerStatus === 'rejected' ? (
+                            <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--rose)', background: 'var(--rose-soft)',
+                              padding: '10px 12px', borderRadius: 8 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4 }}>✗ Declined</div>
+                              {a.studentResponse || 'No reason provided'}
+                            </div>
+                          ) : <span style={{ fontSize: 12, color: 'var(--muted)' }}>Awaiting student response</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </td></tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
