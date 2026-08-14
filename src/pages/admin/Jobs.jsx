@@ -331,7 +331,7 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
                     ) : <span style={{ fontSize: 11, color: 'var(--muted)' }}>—</span>}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
                       {a.offerStatus === 'accepted_pending_admin' && (
                         <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
                           onClick={async () => {
@@ -349,11 +349,36 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
                             } catch (e) { toast.error('Failed') }
                           }}>{Icons.check} Approve &amp; place</button>
                       )}
-                      {a.stage < 6 && a.offerStatus !== 'accepted_pending_admin' && (
-                        <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
-                          onClick={() => updateAppStage(a.id, a.stage + 1, a.studentName)}>
-                          → {STAGES[a.stage + 1]}
-                        </button>
+                      {a.stage <= 6 && (
+                        <select value={a.stage}
+                          onChange={e => {
+                            const ns = parseInt(e.target.value)
+                            if (ns === a.stage) return
+                            const updates = { stage: ns }
+                            if (ns === 6) { updates.status = 'placed'; updates.offerStatus = 'accepted'; updates.adminApprovedResponse = true }
+                            if (ns < 5) { updates.offerStatus = null }
+                            if (ns < 6 && a.stage === 6) { updates.status = 'active' }
+                            updateDocument('applications', a.id, updates).then(() => {
+                              if (ns === 6) {
+                                const app = jobApps.find(x => x.id === a.id)
+                                if (app) updateDocument('students', app.studentId, {
+                                  placementStatus: 'placed', placedAt: j.companyName,
+                                  package: j.packageNumeric || null,
+                                })
+                              }
+                              if (a.stage === 6 && ns < 6) {
+                                const app = jobApps.find(x => x.id === a.id)
+                                if (app) updateDocument('students', app.studentId, {
+                                  placementStatus: null, placedAt: null, package: null,
+                                })
+                              }
+                              toast.success(`${a.studentName} → ${STAGES[ns]}`)
+                            }).catch(() => toast.error('Failed'))
+                          }}
+                          style={{ padding: '5px 8px', borderRadius: 8, border: '1.5px solid var(--line)',
+                            fontSize: 12, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', minWidth: 110 }}>
+                          {STAGES.map((s, i) => <option key={s} value={i}>{s}</option>)}
+                        </select>
                       )}
                       {a.stage < 6 && (
                         <button className="btn" style={{ padding: '4px 10px', fontSize: 11, background: 'transparent',

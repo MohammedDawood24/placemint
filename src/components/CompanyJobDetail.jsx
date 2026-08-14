@@ -210,7 +210,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
                   <td>{renderOfferStatus(a)}</td>
                   <td style={{ textAlign: 'right' }}>
                     {a.stage < 6 ? (
-                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' }}>
                         {/* Admin approve acceptance */}
                         {isAdmin && a.offerStatus === 'accepted_pending_admin' && (
                           <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
@@ -218,30 +218,52 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
                             {Icons.check} Approve &amp; place
                           </button>
                         )}
-                        {/* Normal advance */}
-                        {a.stage < 5 && (
-                          <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
-                            onClick={() => advance(a)}>→ {STAGES[a.stage + 1]}</button>
-                        )}
-                        {/* Advance to offer (triggers modal) */}
-                        {a.stage === 4 && (
-                          <button className="btn" style={{ padding: '4px 10px', fontSize: 11,
-                            background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: 10,
-                            fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-                            onClick={() => advance(a)}>📋 Send offer</button>
-                        )}
-                        {/* Advance to placed (only if accepted) */}
-                        {a.stage === 5 && a.offerStatus === 'accepted' && (
-                          <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
-                            onClick={() => advance(a)}>→ Place</button>
-                        )}
+                        {/* Stage selector — move to any stage */}
+                        <select value={a.stage}
+                          onChange={e => {
+                            const newStage = parseInt(e.target.value)
+                            if (newStage === a.stage) return
+                            if (newStage === 5) { advance({ ...a, stage: 4 }); return } // trigger offer modal
+                            if (newStage === 6 && a.offerStatus !== 'accepted') {
+                              toast.error('Student must accept offer before placing'); return
+                            }
+                            const updates = { stage: newStage }
+                            if (newStage === 6) { updates.status = 'placed'; updates.offerStatus = 'accepted'; updates.adminApprovedResponse = true }
+                            if (newStage < 5) { updates.offerStatus = null; updates.offerDetails = null; updates.offerLetterUrl = null }
+                            updateDocument('applications', a.id, updates).then(() => {
+                              if (newStage === 6) {
+                                updateDocument('students', a.studentId, {
+                                  placementStatus: 'placed', placedAt: j.companyName,
+                                  package: j.packageNumeric || null,
+                                })
+                              }
+                              // If moving back from placed
+                              if (a.stage === 6 && newStage < 6) {
+                                updateDocument('students', a.studentId, { placementStatus: null, placedAt: null, package: null })
+                              }
+                              toast.success(`${a.studentName} → ${STAGES[newStage]}`)
+                            }).catch(e => toast.error('Failed'))
+                          }}
+                          style={{ padding: '5px 8px', borderRadius: 8, border: '1.5px solid var(--line)',
+                            fontSize: 12, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', minWidth: 110 }}>
+                          {STAGES.map((s, i) => <option key={s} value={i}>{s}</option>)}
+                        </select>
                         <button className="btn" style={{ padding: '4px 10px', fontSize: 11,
                           background: 'transparent', border: '1px solid var(--rose)', color: 'var(--rose)',
                           cursor: 'pointer', borderRadius: 10, fontFamily: 'inherit', fontWeight: 600 }}
                           onClick={() => rejectApp(a)}>Reject</button>
                       </div>
                     ) : (
-                      <span className="badge b-green">{Icons.cap} Placed</span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <span className="badge b-green">{Icons.cap} Placed</span>
+                        <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 10 }}
+                          onClick={() => {
+                            if (!confirm(`Revert ${a.studentName} from Placed? This reopens their placement status.`)) return
+                            updateDocument('applications', a.id, { stage: 5, status: 'active' })
+                            updateDocument('students', a.studentId, { placementStatus: null, placedAt: null, package: null })
+                            toast.success(`${a.studentName} reverted to Offer stage`)
+                          }}>Revert</button>
+                      </div>
                     )}
                   </td>
                 </tr>

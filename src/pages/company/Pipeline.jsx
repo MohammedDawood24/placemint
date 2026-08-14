@@ -88,17 +88,50 @@ export default function CompanyPipeline() {
                     <td><span className={`badge ${a.stage >= 6 ? 'b-green' : 'b-indigo'}`}>
                       {STAGES[a.stage]}</span></td>
                     <td style={{ textAlign: 'right' }}>
-                      {a.stage < 6 && (
-                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                          <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
-                            onClick={() => advance(a)}>→ {STAGES[a.stage + 1]}</button>
+                      {a.stage < 6 ? (
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <select value={a.stage}
+                            onChange={e => {
+                              const ns = parseInt(e.target.value)
+                              if (ns === a.stage) return
+                              const updates = { stage: ns }
+                              if (ns === 6) { updates.status = 'placed' }
+                              if (ns < 5) { updates.offerStatus = null }
+                              updateDocument('applications', a.id, updates).then(() => {
+                                if (ns === 6) {
+                                  const job = jobMap[a.jobId]
+                                  updateDocument('students', a.studentId, {
+                                    placementStatus: 'placed', placedAt: job?.companyName || '',
+                                    package: job?.packageNumeric || null,
+                                  })
+                                }
+                                if (a.stage === 6 && ns < 6) {
+                                  updateDocument('students', a.studentId, { placementStatus: null, placedAt: null, package: null })
+                                }
+                                toast.success(`${a.studentName} → ${STAGES[ns]}`)
+                              }).catch(() => toast.error('Failed'))
+                            }}
+                            style={{ padding: '5px 8px', borderRadius: 8, border: '1.5px solid var(--line)',
+                              fontSize: 12, fontFamily: 'inherit', background: '#fff', cursor: 'pointer' }}>
+                            {STAGES.map((s, i) => <option key={s} value={i}>{s}</option>)}
+                          </select>
                           <button className="btn" style={{ padding: '4px 10px', fontSize: 11, background: 'transparent',
                             border: '1px solid var(--rose)', color: 'var(--rose)', cursor: 'pointer',
                             borderRadius: 10, fontFamily: 'inherit', fontWeight: 600 }}
                             onClick={() => reject(a)}>Reject</button>
                         </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
+                          <span className="badge b-green">{Icons.cap} Placed</span>
+                          <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 10 }}
+                            onClick={() => {
+                              if (!confirm(`Revert ${a.studentName} from Placed?`)) return
+                              updateDocument('applications', a.id, { stage: 5, status: 'active' })
+                              updateDocument('students', a.studentId, { placementStatus: null, placedAt: null, package: null })
+                              toast.success(`${a.studentName} reverted to Offer`)
+                            }}>Revert</button>
+                        </div>
                       )}
-                      {a.stage >= 6 && <span className="badge b-green">{Icons.cap} Placed</span>}
                     </td>
                   </tr>
                 )
