@@ -23,7 +23,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
   const stageCounts = STAGES.map((_, i) => active.filter(a => a.stage === i).length)
 
   const [offerModal, setOfferModal] = useState(null) // application being offered
-  const [offerForm, setOfferForm] = useState({ details: '', letterUrl: '' })
+  const [offerForm, setOfferForm] = useState({ details: '', letterUrl: '', letterFile: null, letterFileName: '', letterMode: 'upload' })
 
   async function advance(app) {
     const newStage = app.stage + 1
@@ -31,7 +31,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
     // If advancing to Offer, show offer details modal
     if (newStage === 5) {
       setOfferModal(app)
-      setOfferForm({ details: '', letterUrl: '' })
+      setOfferForm({ details: '', letterUrl: '', letterFile: null, letterFileName: '', letterMode: 'upload' })
       return
     }
 
@@ -68,16 +68,30 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
   async function submitOffer() {
     if (!offerModal) return
     try {
-      await updateDocument('applications', offerModal.id, {
+      const data = {
         stage: 5,
         offerDetails: offerForm.details,
-        offerLetterUrl: offerForm.letterUrl,
+        offerLetterUrl: offerForm.letterMode === 'link' ? offerForm.letterUrl : '',
+        offerLetterFile: offerForm.letterMode === 'upload' && offerForm.letterFile ? offerForm.letterFile : null,
+        offerLetterFileName: offerForm.letterFileName || '',
         offerStatus: 'pending_student',
         offeredAt: new Date(),
-      })
+      }
+      await updateDocument('applications', offerModal.id, data)
       toast.success(`Offer sent to ${offerModal.studentName}`)
       setOfferModal(null)
     } catch (e) { toast.error('Failed: ' + e.message) }
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 800000) { toast.error('File too large. Max 800KB for Firestore storage. Use a link for larger files.'); return }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setOfferForm(f => ({ ...f, letterFile: reader.result, letterFileName: file.name }))
+    }
+    reader.readAsDataURL(file)
   }
 
   async function approveAcceptance(app) {
@@ -307,15 +321,65 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
               style={{ width: '100%', minHeight: 120, padding: '12px 14px', border: '1.5px solid var(--line)',
                 borderRadius: 10, fontSize: 14, fontFamily: 'inherit', lineHeight: 1.6, resize: 'vertical' }} />
           </div>
-          <div className="field" style={{ marginTop: 14 }}>
-            <label style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'block' }}>
-              Offer letter URL <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional — link to PDF)</span>
+          <div style={{ marginTop: 14 }}>
+            <label style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, display: 'block' }}>
+              Offer letter <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional)</span>
             </label>
-            <input value={offerForm.letterUrl}
-              onChange={e => setOfferForm(f => ({ ...f, letterUrl: e.target.value }))}
-              placeholder="https://drive.google.com/..."
-              style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--line)',
-                borderRadius: 10, fontSize: 14, fontFamily: 'inherit' }} />
+            {/* Toggle */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: '#f3f4fa', borderRadius: 10, padding: 3 }}>
+              <button type="button"
+                onClick={() => setOfferForm(f => ({ ...f, letterMode: 'upload' }))}
+                style={{ flex: 1, padding: '8px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  background: offerForm.letterMode === 'upload' ? '#fff' : 'transparent',
+                  color: offerForm.letterMode === 'upload' ? 'var(--indigo)' : 'var(--muted)',
+                  boxShadow: offerForm.letterMode === 'upload' ? '0 1px 4px rgba(0,0,0,.08)' : 'none',
+                }}>📎 Upload file</button>
+              <button type="button"
+                onClick={() => setOfferForm(f => ({ ...f, letterMode: 'link' }))}
+                style={{ flex: 1, padding: '8px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  background: offerForm.letterMode === 'link' ? '#fff' : 'transparent',
+                  color: offerForm.letterMode === 'link' ? 'var(--indigo)' : 'var(--muted)',
+                  boxShadow: offerForm.letterMode === 'link' ? '0 1px 4px rgba(0,0,0,.08)' : 'none',
+                }}>🔗 Add link</button>
+            </div>
+
+            {offerForm.letterMode === 'upload' ? (
+              <div>
+                {offerForm.letterFile ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                    background: 'var(--green-soft)', borderRadius: 10, border: '1px solid #b5e6cf' }}>
+                    <span style={{ fontSize: 22 }}>📄</span>
+                    <div style={{ flex: 1 }}>
+                      <b style={{ fontSize: 13 }}>{offerForm.letterFileName}</b>
+                      <div style={{ fontSize: 11, color: 'var(--green)' }}>Ready to send</div>
+                    </div>
+                    <button type="button" onClick={() => setOfferForm(f => ({ ...f, letterFile: null, letterFileName: '' }))}
+                      style={{ background: 'none', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 16 }}>×</button>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                    padding: '24px 16px', border: '2px dashed var(--line)', borderRadius: 12, cursor: 'pointer',
+                    background: '#fbfbfe', transition: '.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
+                    <span style={{ fontSize: 28 }}>📎</span>
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                      Click to upload PDF, DOC, or image <span style={{ color: 'var(--rose)' }}>(max 800KB)</span>
+                    </span>
+                    <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onChange={handleFileUpload}
+                      style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
+            ) : (
+              <input value={offerForm.letterUrl}
+                onChange={e => setOfferForm(f => ({ ...f, letterUrl: e.target.value }))}
+                placeholder="https://drive.google.com/... or OneDrive link"
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--line)',
+                  borderRadius: 10, fontSize: 14, fontFamily: 'inherit' }} />
+            )}
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
             <button className="btn btn-ghost" onClick={() => setOfferModal(null)}>Cancel</button>

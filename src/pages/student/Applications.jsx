@@ -163,7 +163,14 @@ export default function StudentApplications() {
                       <a href={a.offerLetterUrl} target="_blank" rel="noreferrer"
                         style={{ fontSize: 13, color: 'var(--indigo)', fontWeight: 600, display: 'inline-flex',
                           alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                        {Icons.dl} View offer letter
+                        🔗 View offer letter (link)
+                      </a>
+                    )}
+                    {a.offerLetterFile && (
+                      <a href={a.offerLetterFile} download={a.offerLetterFileName || 'offer-letter'}
+                        style={{ fontSize: 13, color: 'var(--indigo)', fontWeight: 600, display: 'inline-flex',
+                          alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                        📄 Download offer letter ({a.offerLetterFileName || 'file'})
                       </a>
                     )}
 
