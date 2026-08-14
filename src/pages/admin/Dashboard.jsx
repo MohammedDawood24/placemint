@@ -5,6 +5,7 @@ import { useCollection, orderBy, updateDocument } from '../../hooks/useFirestore
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { formatPackage, toLPA } from '../../utils/formatPackage'
+import { notifyPlaced } from '../../utils/email'
 import toast from 'react-hot-toast'
 
 function Stat({ ic, color, soft, v, l, trend, dir }) {
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
         package: app.job.packageNumeric || null,
       })
       toast.success(`${app.userName} placed at ${app.job.companyName}`)
+      notifyPlaced(app.userName, app.userName, app.job.role, app.job.companyName, app.job.packageNumeric).catch(() => {})
     } catch (e) { toast.error('Failed: ' + e.message) }
   }
 

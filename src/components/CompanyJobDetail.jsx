@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useCollection, where, updateDocument } from '../hooks/useFirestore'
 import { Icons, initials } from './Icons'
 import { formatPackage } from '../utils/formatPackage'
+import { notifyOfferReceived, notifyStageUpdate, notifyPlaced } from '../utils/email'
 import Modal from './Modal'
 import toast from 'react-hot-toast'
 
@@ -81,6 +82,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
       }
       await updateDocument('applications', offerModal.id, data)
       toast.success(`Offer sent to ${offerModal.studentName}`)
+      notifyOfferReceived(offerModal.studentName, offerModal.studentName, j.role, j.companyName).catch(() => {})
       setOfferModal(null)
     } catch (e) { toast.error('Failed: ' + e.message) }
   }
@@ -136,6 +138,7 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
         package: j.packageNumeric || null,
       })
       toast.success(`${app.studentName} placed — acceptance approved`)
+      notifyPlaced(app.studentName, app.studentName, j.role, j.companyName, j.packageNumeric).catch(() => {})
     } catch (e) { toast.error('Failed: ' + e.message) }
   }
 
