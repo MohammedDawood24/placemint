@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { collection, query, where, getCountFromServer } from 'firebase/firestore'
 import { db } from '../../config/firebase'
-import { useCollection, orderBy } from '../../hooks/useFirestore'
+import { useCollection, orderBy, updateDocument } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { formatPackage, toLPA } from '../../utils/formatPackage'
+import toast from 'react-hot-toast'
 
 function Stat({ ic, color, soft, v, l, trend, dir }) {
   return (
@@ -92,7 +93,30 @@ export default function AdminDashboard() {
     (s.tenthVerified === 'pending') || (s.twelfthVerified === 'pending')
   ).length
 
+  // Pending offer acceptances — needs admin approval before company sees
+  const pendingOfferAcceptances = useMemo(() => {
+    return applications.filter(a => a.offerStatus === 'accepted_pending_admin').map(a => {
+      const job = jobs.find(j => j.id === a.jobId) || {}
+      const user = allUsers.find(u => u.id === a.studentId)
+      return { ...a, job, userName: user?.displayName || a.studentName }
+    })
+  }, [applications, jobs, allUsers])
+
   const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
+
+  async function approveAndPlace(app) {
+    try {
+      await updateDocument('applications', app.id, {
+        offerStatus: 'accepted', adminApprovedResponse: true,
+        adminApprovedAt: new Date(), stage: 6, status: 'placed',
+      })
+      await updateDocument('students', app.studentId, {
+        placementStatus: 'placed', placedAt: app.job.companyName,
+        package: app.job.packageNumeric || null,
+      })
+      toast.success(`${app.userName} placed at ${app.job.companyName}`)
+    } catch (e) { toast.error('Failed: ' + e.message) }
+  }
 
   return (
     <>
@@ -104,6 +128,118 @@ export default function AdminDashboard() {
           Here's what's happening across {siteName || 'your placement portal'} today.
         </p>
       </div>
+
+      {/* ──── OFFER ACCEPTANCES NEEDING APPROVAL ──── */}
+      {pendingOfferAcceptances.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div className="sec-head" style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--gold)',
+                display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                {pendingOfferAcceptances.length}</span>
+              <div>
+                <h3>Offer acceptances awaiting your approval</h3>
+                <div className="sub">Students accepted — review and approve to finalize placement</div>
+              </div>
+            </div>
+          </div>
+
+          {pendingOfferAcceptances.map(a => (
+            <div key={a.id} className="card" style={{ marginBottom: 12, overflow: 'hidden',
+              border: '2px solid var(--gold)', borderRadius: 14 }}>
+              {/* Header */}
+              <div style={{ padding: '16px 20px', background: 'var(--gold-soft)',
+                display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 11, background: '#4C5BD4',
+                  display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff',
+                  fontSize: 18, flex: '0 0 auto' }}>{(a.job.companyName || '?')[0]}</div>
+                <div style={{ flex: 1 }}>
+                  <b style={{ fontSize: 16, fontWeight: 700 }}>{a.userName}</b>
+                  <div style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+                    accepted offer for <b>{a.job.role || '—'}</b> at <b>{a.job.companyName || '—'}</b>
+                    {a.job.package ? ` · ${a.job.package}` : ''}
+                  </div>
+                </div>
+                <span className="badge b-gold" style={{ fontSize: 12, padding: '5px 12px' }}>
+                  Needs approval
+                </span>
+              </div>
+
+              <div style={{ padding: '16px 20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {/* Offer details */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6,
+                      textTransform: 'uppercase', letterSpacing: '0.5px' }}>Offer details</div>
+                    {a.offerDetails ? (
+                      <p style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--ink-2)', margin: 0,
+                        whiteSpace: 'pre-wrap', background: '#f8f9fc', padding: '10px 12px', borderRadius: 8 }}>
+                        {a.offerDetails}</p>
+                    ) : <span style={{ fontSize: 13, color: 'var(--muted)' }}>No details provided</span>}
+
+                    {/* Offer letter */}
+                    {(a.offerLetterUrl || a.offerLetterFile) && (
+                      <div style={{ marginTop: 10 }}>
+                        {a.offerLetterUrl && (
+                          <a href={a.offerLetterUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 13, color: 'var(--indigo)', fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            🔗 View offer letter (link)
+                          </a>
+                        )}
+                        {a.offerLetterFile && (
+                          <a href={a.offerLetterFile} download={a.offerLetterFileName || 'offer-letter'}
+                            style={{ fontSize: 13, color: 'var(--indigo)', fontWeight: 600,
+                              display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: a.offerLetterUrl ? 16 : 0 }}>
+                            📄 Download offer letter
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Student's consent / acceptance */}
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6,
+                      textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student's declaration</div>
+                    {a.consentText ? (
+                      <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink-2)',
+                        background: 'var(--green-soft)', padding: '10px 12px', borderRadius: 8,
+                        border: '1px solid #b5e6cf' }}>
+                        <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600, marginBottom: 4 }}>
+                          ✓ Consent given
+                          {a.studentRespondedAt && ` · ${new Date(
+                            a.studentRespondedAt.seconds ? a.studentRespondedAt.seconds * 1000 : a.studentRespondedAt
+                          ).toLocaleDateString()}`}
+                        </div>
+                        {a.consentText}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 13, color: 'var(--muted)' }}>No consent text recorded</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Student info chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, paddingTop: 14,
+                  borderTop: '1px solid var(--line)' }}>
+                  {a.department && <span className="chip">Dept: {a.department}</span>}
+                  {a.studentUsn && <span className="chip">USN: {a.studentUsn}</span>}
+                  {a.cgpa && <span className="chip">CGPA: {a.cgpa}</span>}
+                </div>
+
+                {/* Action */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                  <button className="btn btn-pri" onClick={() => approveAndPlace(a)}
+                    style={{ padding: '10px 24px', fontSize: 14 }}>
+                    {Icons.check} Approve &amp; place student
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Key stats */}
       <div className="cards-row c4">
