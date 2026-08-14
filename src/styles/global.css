@@ -319,14 +319,85 @@ table.tbl { width: 100%; border-collapse: collapse; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* responsive */
+/* ─── MOBILE RESPONSIVE ─── */
+.menu-btn { display: none; background: none; border: none; color: var(--ink); cursor: pointer; padding: 6px; border-radius: 8px; }
+.menu-btn:hover { background: var(--indigo-soft); }
+.side-close { display: none; background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; padding: 0 4px; line-height: 1; }
+.side-overlay { display: none; }
+
 @media (max-width: 920px) {
   .login { grid-template-columns: 1fr; }
   .login-art { display: none; }
   .login-form { padding: 36px 24px; }
-  .shell { grid-template-columns: 1fr; }
-  .side { display: none; }
-  .c4 { grid-template-columns: repeat(2, 1fr); }
-  .c2, .c3 { grid-template-columns: 1fr; }
-  .content { padding: 20px 16px 40px; }
   .portal-grid { grid-template-columns: 1fr; }
+
+  /* Shell layout */
+  .shell { grid-template-columns: 1fr; }
+  .menu-btn { display: flex; align-items: center; }
+
+  /* Sidebar — slide-in overlay */
+  .side {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
+    transform: translateX(-100%); transition: transform .25s ease;
+    z-index: 1001; box-shadow: none;
+  }
+  .side.side-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(14,22,51,.15);
+  }
+  .side-close { display: block; margin-left: auto; }
+  .side-overlay {
+    display: block; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(14,22,51,.35); backdrop-filter: blur(2px);
+  }
+
+  /* Topbar */
+  .topbar { padding: 14px 16px; gap: 10px; }
+  .topbar h1 { font-size: 17px; }
+  .search { display: none; }
+
+  /* Content */
+  .content { padding: 16px 14px 40px; }
+
+  /* Card grids */
+  .c4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .c2, .c3 { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Stat cards */
+  .card.stat { padding: 14px; }
+  .card.stat .v { font-size: 22px; }
+  .card.stat .l { font-size: 11px; }
+
+  /* Tables — horizontal scroll */
+  .tbl { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+
+  /* Sec heads */
+  .sec-head { flex-wrap: wrap; gap: 8px; }
+
+  /* Two-column grids → stack */
+  [style*="gridTemplateColumns: '1fr 1fr'"],
+  [style*="gridTemplateColumns: '1.4fr 1fr'"],
+  [style*="gridTemplateColumns: '1.3fr 1fr'"],
+  [style*="gridTemplateColumns: '1.2fr .8fr'"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .c4 { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .topbar { padding: 12px 14px; }
+  .topbar h1 { font-size: 15px; }
+  .crumb { font-size: 10px; }
+  .content { padding: 12px 10px 32px; }
+  .card { border-radius: 12px; }
+  .card.stat { padding: 12px 10px; }
+  .card.stat .v { font-size: 20px; }
+  .card.stat .ic { width: 32px; height: 32px; }
+  .btn { padding: 8px 14px; font-size: 13px; }
+  .field input, .field select, .field textarea { padding: 9px 12px; font-size: 14px; }
+}
+
+/* ─── Responsive grid helpers ─── */
+@media (max-width: 920px) {
+  .grid-resp { grid-template-columns: 1fr !important; }
 }

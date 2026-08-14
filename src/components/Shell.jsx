@@ -145,6 +145,7 @@ export default function Shell() {
   const site = useSite()
 
   const [view, setView] = useState('dash')
+  const [mobileMenu, setMobileMenu] = useState(false)
   const Screen = screens[view] || (() => <Coming label="This section" />)
 
   let title = 'Dashboard'
@@ -159,9 +160,17 @@ export default function Shell() {
     navigate('/')
   }
 
+  function handleNav(k) {
+    setView(k)
+    setMobileMenu(false)
+  }
+
   return (
     <div className="shell">
-      <aside className="side">
+      {/* Mobile overlay */}
+      {mobileMenu && <div className="side-overlay" onClick={() => setMobileMenu(false)} />}
+
+      <aside className={`side ${mobileMenu ? 'side-open' : ''}`}>
         <div className="side-brand">
           <div className="brand-mark" style={{
             width: 36, height: 36, borderRadius: 10, fontSize: 15,
@@ -171,6 +180,7 @@ export default function Shell() {
             <div className="bn">{site.siteName}</div>
             <div className="bs">{site.cellName}</div>
           </div>
+          <button className="side-close" onClick={() => setMobileMenu(false)}>×</button>
         </div>
 
         {nav.map(group => (
@@ -180,7 +190,7 @@ export default function Shell() {
               <button
                 key={it.k}
                 className={`nav-item ${view === it.k ? 'active' : ''}`}
-                onClick={() => setView(it.k)}
+                onClick={() => handleNav(it.k)}
               >
                 {it.ic}{it.label}
                 {it.badge && <span className="badge-n">{it.badge}</span>}
@@ -207,6 +217,11 @@ export default function Shell() {
 
       <div className="main">
         <header className="topbar">
+          <button className="menu-btn" onClick={() => setMobileMenu(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <div>
             <div className="crumb">{roleName} panel</div>
             <h1>{title}</h1>
@@ -215,7 +230,7 @@ export default function Shell() {
           <button className="icon-btn">{Icons.bell}<span className="dot" /></button>
         </header>
         <div className="content">
-          <Screen onNavigate={setView} />
+          <Screen onNavigate={handleNav} />
         </div>
       </div>
     </div>
