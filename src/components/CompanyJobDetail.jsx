@@ -356,16 +356,22 @@ export default function CompanyJobDetail({ job, onBack, onEdit, isAdmin }) {
                           ) : <span style={{ fontSize: 12, color: 'var(--muted)' }}>Awaiting student response</span>}
                         </div>
                       </div>
-                      {/* Edit offer button — only if still at offer stage */}
-                      {a.stage === 5 && (
+                      {/* Edit offer button — only before admin approval */}
+                      {a.stage === 5 && a.offerStatus !== 'accepted' && (
                         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
                           <button className="btn btn-ghost" onClick={e => { e.stopPropagation(); startEditOffer(a) }}
                             style={{ fontSize: 12 }}>
                             {Icons.gear} Update offer details
                           </button>
                           <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 10 }}>
-                            Re-upload letter or update offer text — student will be re-notified
+                            Re-upload letter or update offer text — student will need to re-accept
                           </span>
+                        </div>
+                      )}
+                      {a.offerStatus === 'accepted' && (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)',
+                          fontSize: 12, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {Icons.lock} Offer locked — accepted and approved by placement admin
                         </div>
                       )}
                     </div>
