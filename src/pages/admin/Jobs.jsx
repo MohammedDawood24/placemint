@@ -303,10 +303,10 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
           </div>
         ) : (
           <table className="tbl">
-            <thead><tr><th>Student</th><th>USN</th><th>Dept</th><th>CGPA</th><th>Stage</th><th></th></tr></thead>
+            <thead><tr><th>Student</th><th>USN</th><th>Dept</th><th>CGPA</th><th>Stage</th><th>Offer</th><th></th></tr></thead>
             <tbody>
               {jobApps.filter(a => a.status !== 'rejected').map(a => (
-                <tr key={a.id}>
+                <tr key={a.id} style={a.stage >= 6 ? { background: 'var(--green-soft)' } : {}}>
                   <td><div className="cell-u"><div className="av-sm">{initials(a.studentName)}</div>
                     <b>{a.studentName}</b></div></td>
                   <td className="mono" style={{ fontSize: 12 }}>{a.studentUsn || '—'}</td>
@@ -314,9 +314,42 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
                   <td className="mono">{a.cgpa ?? '—'}</td>
                   <td><span className={`badge ${a.stage >= 6 ? 'b-green' : 'b-indigo'}`}>
                     {STAGES[a.stage] || 'Applied'}</span></td>
+                  <td>
+                    {a.stage >= 5 ? (
+                      <div>
+                        {a.offerStatus === 'accepted' && <span className="badge b-green" style={{ fontSize: 10 }}>Accepted</span>}
+                        {a.offerStatus === 'accepted_pending_admin' && <span className="badge b-gold" style={{ fontSize: 10 }}>Accepted — needs approval</span>}
+                        {a.offerStatus === 'pending_student' && <span className="badge b-gold" style={{ fontSize: 10 }}>Awaiting student</span>}
+                        {a.offerStatus === 'rejected' && (
+                          <div>
+                            <span className="badge b-rose" style={{ fontSize: 10 }}>Declined</span>
+                            {a.studentResponse && <div style={{ fontSize: 10, color: 'var(--rose)', marginTop: 2 }}>"{a.studentResponse}"</div>}
+                          </div>
+                        )}
+                        {!a.offerStatus && <span style={{ fontSize: 11, color: 'var(--muted)' }}>—</span>}
+                      </div>
+                    ) : <span style={{ fontSize: 11, color: 'var(--muted)' }}>—</span>}
+                  </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                      {a.stage < 6 && (
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      {a.offerStatus === 'accepted_pending_admin' && (
+                        <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
+                          onClick={async () => {
+                            try {
+                              await updateDocument('applications', a.id, {
+                                offerStatus: 'accepted', adminApprovedResponse: true,
+                                adminApprovedAt: new Date(), stage: 6, status: 'placed',
+                              })
+                              const app = jobApps.find(x => x.id === a.id)
+                              if (app) await updateDocument('students', app.studentId, {
+                                placementStatus: 'placed', placedAt: j.companyName,
+                                package: j.packageNumeric || null,
+                              })
+                              toast.success(`${a.studentName} placed — acceptance approved`)
+                            } catch (e) { toast.error('Failed') }
+                          }}>{Icons.check} Approve &amp; place</button>
+                      )}
+                      {a.stage < 6 && a.offerStatus !== 'accepted_pending_admin' && (
                         <button className="btn btn-pri" style={{ padding: '4px 10px', fontSize: 11 }}
                           onClick={() => updateAppStage(a.id, a.stage + 1, a.studentName)}>
                           → {STAGES[a.stage + 1]}
