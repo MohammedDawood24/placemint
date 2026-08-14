@@ -57,14 +57,20 @@ export default function StudentApplications() {
   const inProgress = active.filter(a => a.stage > 0 && a.stage < 6)
   const hasOfferOrPlaced = active.some(a => a.stage >= 5)
 
+  const [acceptModal, setAcceptModal] = useState(null)
+  const [acceptConsent, setAcceptConsent] = useState(false)
+
   async function acceptOffer(app) {
-    if (!confirm('Accept this offer? This will be sent to the placement admin for approval.')) return
     try {
+      const job = jobMap[app.jobId] || {}
       await updateDocument('applications', app.id, {
         offerStatus: 'accepted_pending_admin',
         studentRespondedAt: new Date(),
+        consentText: `I, ${userData?.displayName || 'the undersigned'}, hereby accept the offer for the role of "${job.role || 'the offered position'}" at ${job.companyName || 'the company'}. I commit to joining the organization as per the terms mentioned in the offer letter. I understand that this acceptance is subject to approval by the placement cell and that withdrawing after acceptance may affect my placement eligibility.`,
       })
       toast.success('Acceptance submitted — awaiting admin approval')
+      setAcceptModal(null)
+      setAcceptConsent(false)
     } catch (e) { toast.error('Failed: ' + e.message) }
   }
 
@@ -177,7 +183,7 @@ export default function StudentApplications() {
                     {/* Accept / Reject buttons */}
                     {needsResponse && (
                       <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                        <button className="btn btn-pri" onClick={() => acceptOffer(a)}
+                        <button className="btn btn-pri" onClick={() => { setAcceptModal(a); setAcceptConsent(false) }}
                           style={{ padding: '10px 24px', fontSize: 14 }}>
                           {Icons.check} Accept offer
                         </button>
@@ -187,6 +193,19 @@ export default function StudentApplications() {
                             borderRadius: 10, fontFamily: 'inherit', fontWeight: 600 }}>
                           Decline offer
                         </button>
+                      </div>
+                    )}
+
+                    {a.offerStatus === 'accepted_pending_admin' && a.consentText && (
+                      <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--green-soft)',
+                        borderRadius: 8, fontSize: 12.5, color: '#0c7a4c', lineHeight: 1.5 }}>
+                        <b>Your declaration:</b> {a.consentText}
+                      </div>
+                    )}
+                    {a.offerStatus === 'accepted' && a.consentText && (
+                      <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--green-soft)',
+                        borderRadius: 8, fontSize: 12.5, color: '#0c7a4c', lineHeight: 1.5 }}>
+                        <b>Your declaration:</b> {a.consentText}
                       </div>
                     )}
 
@@ -239,6 +258,63 @@ export default function StudentApplications() {
           </div>
         </>
       )}
+
+      {/* Accept consent modal */}
+      {acceptModal && (() => {
+        const job = jobMap[acceptModal.jobId] || {}
+        return (
+          <Modal title="Accept offer" onClose={() => setAcceptModal(null)}>
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#4C5BD4',
+                  display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff', fontSize: 20 }}>
+                  {(job.companyName || '?')[0]}</div>
+                <div>
+                  <b style={{ fontSize: 16, display: 'block' }}>{job.role || 'Offered role'}</b>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>{job.companyName}
+                    {job.package ? ` · ${formatPackage(job.packageNumeric)}` : ''}</span>
+                </div>
+              </div>
+
+              <div style={{ padding: '18px 16px', background: '#f8f9fc', borderRadius: 12,
+                border: '1.5px solid var(--line)', marginBottom: 16 }}>
+                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--ink)', margin: 0 }}>
+                  I, <b>{userData?.displayName || 'the undersigned'}</b>, hereby accept the offer for the
+                  role of <b>"{job.role || 'the offered position'}"</b> at <b>{job.companyName || 'the company'}</b>.
+                </p>
+                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--ink)', margin: '10px 0 0' }}>
+                  I commit to joining the organization as per the terms mentioned in the offer letter. I understand that
+                  this acceptance is subject to approval by the placement cell and that <b>withdrawing after acceptance
+                  may affect my future placement eligibility</b>.
+                </p>
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
+                padding: '12px 14px', borderRadius: 10,
+                background: acceptConsent ? 'var(--green-soft)' : '#fff',
+                border: `1.5px solid ${acceptConsent ? 'var(--green)' : 'var(--line)'}`,
+                transition: '.15s' }}>
+                <input type="checkbox" checked={acceptConsent}
+                  onChange={e => setAcceptConsent(e.target.checked)}
+                  style={{ width: 18, height: 18, marginTop: 2, accentColor: 'var(--green)' }} />
+                <span style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--ink)' }}>
+                  I have read and understood the offer details. I hereby confirm my acceptance and agree to
+                  abide by the terms and conditions of the offer.
+                </span>
+              </label>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                <button className="btn btn-ghost" onClick={() => setAcceptModal(null)}>Cancel</button>
+                <button className="btn btn-pri" onClick={() => acceptOffer(acceptModal)}
+                  disabled={!acceptConsent}
+                  style={{ opacity: acceptConsent ? 1 : 0.5, padding: '10px 24px' }}>
+                  {Icons.check} I accept this offer
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )
+      })()}
 
       {/* Reject reason modal */}
       {rejectModal && (
