@@ -155,6 +155,41 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
   jobApps.forEach(a => { if (a.stage >= 0 && a.stage < 7) stageCounts[a.stage]++ })
   const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
 
+  const { data: allStudents } = useCollection('students', [], [])
+  const { data: allUsers } = useCollection('users', [], [])
+  const [searchPlaced, setSearchPlaced] = useState('')
+
+  const userMap = {}
+  allUsers.forEach(u => { userMap[u.id] = u })
+
+  // Placed students who could be allowed for this drive
+  const placedStudents = allStudents.filter(s => s.placementStatus === 'placed')
+  const filteredPlaced = searchPlaced
+    ? placedStudents.filter(s => {
+        const name = userMap[s.id]?.displayName || ''
+        return name.toLowerCase().includes(searchPlaced.toLowerCase())
+      })
+    : placedStudents
+
+  async function allowStudent(studentId) {
+    const student = allStudents.find(s => s.id === studentId)
+    const current = student?.allowedJobIds || []
+    if (current.includes(j.id)) return toast('Already allowed')
+    try {
+      await updateDocument('students', studentId, { allowedJobIds: [...current, j.id] })
+      toast.success(`${userMap[studentId]?.displayName || 'Student'} can now apply for this drive`)
+    } catch (e) { toast.error('Failed: ' + e.message) }
+  }
+
+  async function revokeAllow(studentId) {
+    const student = allStudents.find(s => s.id === studentId)
+    const current = student?.allowedJobIds || []
+    try {
+      await updateDocument('students', studentId, { allowedJobIds: current.filter(id => id !== j.id) })
+      toast.success('Permission revoked')
+    } catch (e) { toast.error('Failed: ' + e.message) }
+  }
+
   async function updateStatus(newStatus) {
     try {
       await updateDocument('jobs', j.id, { status: newStatus })
@@ -318,11 +353,72 @@ function JobDetail({ job, applications, onBack, onEdit, onDelete }) {
           </table>
         )}
       </div>
+
+      {/* Allow placed students for this drive */}
+      {placedStudents.length > 0 && (
+        <div className="card p" style={{ marginTop: 16 }}>
+          <div className="sec-head">
+            <div>
+              <h3>Allow placed students</h3>
+              <div className="sub">Grant specific placed students permission to apply for this drive</div>
+            </div>
+          </div>
+
+          {/* Already allowed */}
+          {placedStudents.filter(s => (s.allowedJobIds || []).includes(j.id)).length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)', marginBottom: 8 }}>
+                Currently allowed ({placedStudents.filter(s => (s.allowedJobIds || []).includes(j.id)).length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {placedStudents.filter(s => (s.allowedJobIds || []).includes(j.id)).map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 10px', background: 'var(--green-soft)', borderRadius: 8,
+                    border: '1px solid #b5e6cf', fontSize: 13 }}>
+                    <b>{userMap[s.id]?.displayName || '—'}</b>
+                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>({s.department})</span>
+                    <button onClick={() => revokeAllow(s.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--rose)',
+                        cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Search & add */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+            background: '#fbfbfe', border: '1.5px solid var(--line)', borderRadius: 10, padding: '6px 10px' }}>
+            {Icons.search}
+            <input placeholder="Search placed students by name..." value={searchPlaced}
+              onChange={e => setSearchPlaced(e.target.value)}
+              style={{ border: 'none', outline: 'none', fontFamily: 'inherit', fontSize: 12,
+                width: '100%', background: 'transparent' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filteredPlaced.filter(s => !(s.allowedJobIds || []).includes(j.id)).slice(0, 10).map(s => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px', borderRadius: 8, fontSize: 13 }}>
+                <div className="av-sm">{initials(userMap[s.id]?.displayName || '?')}</div>
+                <div style={{ flex: 1 }}>
+                  <b>{userMap[s.id]?.displayName || '—'}</b>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}> · {s.department} · Placed at {s.placedAt}</span>
+                </div>
+                <button className="btn btn-ghost" onClick={() => allowStudent(s.id)}
+                  style={{ padding: '4px 10px', fontSize: 11 }}>{Icons.check} Allow</button>
+              </div>
+            ))}
+            {filteredPlaced.filter(s => !(s.allowedJobIds || []).includes(j.id)).length === 0 && (
+              <div style={{ padding: '12px', textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
+                {searchPlaced ? 'No matching placed students.' : 'All placed students are already allowed.'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }
-
-// ─── JOB CREATE / EDIT FORM ───
 function JobForm({ job, branches, companies, onBack, onSaved }) {
   const isEdit = !!job
   const [form, setForm] = useState({

@@ -1,6 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext'
 import { useCollection, where } from '../../hooks/useFirestore'
 import { Icons } from '../../components/Icons'
+import Confetti from '../../components/Confetti'
 
 const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
 
@@ -49,9 +50,11 @@ export default function StudentApplications() {
   // Stats
   const placed = active.filter(a => a.stage >= 6)
   const inProgress = active.filter(a => a.stage > 0 && a.stage < 6)
+  const hasOfferOrPlaced = active.some(a => a.stage >= 5)
 
   return (
     <>
+      {hasOfferOrPlaced && <Confetti duration={4000} />}
       {/* Stats */}
       <div className="cards-row c4" style={{ marginBottom: 20 }}>
         <div className="card stat">

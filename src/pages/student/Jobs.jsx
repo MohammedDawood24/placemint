@@ -24,6 +24,15 @@ export default function StudentJobs() {
   const appMap = {}
   myApps.forEach(a => { appMap[a.jobId] = a })
   const isPlaced = student?.placementStatus === 'placed'
+  const allowedJobIds = new Set(student?.allowedJobIds || [])
+
+  // Placed students can only apply to admin-allowed jobs
+  function canApplyForJob(jobId) {
+    if (!canApply) return false
+    if (appliedJobIds.has(jobId)) return false
+    if (isPlaced && !allowedJobIds.has(jobId)) return false
+    return true
+  }
 
   const { eligible, ineligible } = useMemo(() => {
     const e = [], ie = []
@@ -58,7 +67,7 @@ export default function StudentJobs() {
 
   async function handleApply(job) {
     if (!canApply) return toast.error('Complete your profile (100%) before applying.')
-    if (isPlaced) return toast.error("You're already placed.")
+    if (isPlaced && !allowedJobIds.has(job.id)) return toast.error("You're placed. Admin must allow you for this drive.")
     if (appliedJobIds.has(job.id)) return toast.error("Already applied.")
     setApplying(job.id)
     try {
@@ -178,8 +187,20 @@ export default function StudentJobs() {
                       </span>
                       <span className="badge b-grey">Locked</span>
                     </>
-                  ) : isPlaced ? (
-                    <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>You're already placed</span>
+                  ) : isPlaced && !allowedJobIds.has(j.id) ? (
+                    <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>
+                      {Icons.lock} You're placed. Contact admin for special permission.
+                    </span>
+                  ) : isPlaced && allowedJobIds.has(j.id) ? (
+                    <>
+                      <span style={{ fontSize: 12, color: 'var(--green)', flex: 1 }}>
+                        {Icons.check} Admin approved — you can apply for this drive
+                      </span>
+                      <button className="btn btn-pri" style={{ padding: '7px 20px', fontSize: 13 }}
+                        onClick={() => handleApply(j)} disabled={applying === j.id}>
+                        {applying === j.id ? 'Applying…' : 'Register for drive'}
+                      </button>
+                    </>
                   ) : (
                     <>
                       <span style={{ fontSize: 12, color: 'var(--green)', flex: 1 }}>Ready to apply</span>

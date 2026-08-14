@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useDocument, useCollection, where } from '../../hooks/useFirestore'
 import { Icons } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
+import Confetti from '../../components/Confetti'
 
 const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
 
@@ -36,6 +37,8 @@ export default function StudentDashboard() {
 
   const { pct, items, missing } = calcProfileCompletion(student, userData)
   const isPlaced = student?.placementStatus === 'placed'
+  const hasOffer = myApps.some(a => a.stage >= 5 && a.status === 'active')
+  const showConfetti = isPlaced || hasOffer
   const appliedJobIds = new Set(myApps.map(a => a.jobId))
   const appMap = {}
   myApps.forEach(a => { appMap[a.jobId] = a })
@@ -57,6 +60,8 @@ export default function StudentDashboard() {
 
   return (
     <>
+      {showConfetti && <Confetti duration={4000} />}
+
       {/* Placed banner */}
       {isPlaced && (
         <div className="notice" style={{ background: 'var(--green-soft)', borderColor: '#b5e6cf' }}>
