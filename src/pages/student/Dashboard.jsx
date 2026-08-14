@@ -28,7 +28,7 @@ function calcProfileCompletion(student, userData) {
 
 export { calcProfileCompletion }
 
-export default function StudentDashboard() {
+export default function StudentDashboard({ onNavigate }) {
   const { userData } = useAuth()
   const { data: student, loading: stuLoading } = useDocument('students', userData?.id)
   const { data: jobs } = useCollection('jobs', [where('status', '==', 'open')], [])
@@ -88,18 +88,18 @@ export default function StudentDashboard() {
 
       {/* Stats row */}
       <div className="cards-row c4" style={{ marginBottom: 20 }}>
-        <div className="card stat">
+        <div className="card stat" onClick={() => onNavigate?.('profile')} style={{ cursor: 'pointer' }}>
           <div className="ic" style={{ background: pct === 100 ? 'var(--green-soft)' : 'var(--gold-soft)',
             color: pct === 100 ? 'var(--green)' : 'var(--gold)' }}>{pct === 100 ? Icons.check : Icons.spark}</div>
           <div className="v">{pct}%</div>
           <div className="l">Profile complete</div>
         </div>
-        <div className="card stat">
+        <div className="card stat" onClick={() => onNavigate?.('jobs')} style={{ cursor: 'pointer' }}>
           <div className="ic" style={{ background: 'var(--indigo-soft)', color: 'var(--indigo)' }}>{Icons.brief}</div>
           <div className="v">{eligibleJobs.length}</div>
           <div className="l">Eligible drives</div>
         </div>
-        <div className="card stat">
+        <div className="card stat" onClick={() => onNavigate?.('applications')} style={{ cursor: 'pointer' }}>
           <div className="ic" style={{ background: 'var(--indigo-soft)', color: 'var(--indigo)' }}>{Icons.check}</div>
           <div className="v">{myApps.filter(a => a.status === 'active').length}</div>
           <div className="l">Active applications</div>
@@ -146,9 +146,11 @@ export default function StudentDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
         {/* Active applications */}
         <div className="card p">
-          <div className="sec-head">
+          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('applications')}>
             <h3>My applications</h3>
-            <div className="sub">{myApps.filter(a => a.status === 'active').length} active</div>
+            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>
+              View all →
+            </span>
           </div>
           {myApps.filter(a => a.status === 'active').length === 0 ? (
             <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
@@ -159,9 +161,12 @@ export default function StudentDashboard() {
               {myApps.filter(a => a.status === 'active').map(a => {
                 const job = jobs.find(j => j.id === a.jobId) || {}
                 return (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
+                  <div key={a.id} onClick={() => onNavigate?.('applications')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                     padding: '12px 14px', background: a.stage >= 6 ? 'var(--green-soft)' : '#fafbff',
-                    borderRadius: 10, border: '1px solid var(--line)' }}>
+                    borderRadius: 10, border: '1px solid var(--line)', transition: '.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
                     <div style={{ width: 38, height: 38, borderRadius: 10, background: '#4C5BD4',
                       display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff',
                       fontSize: 15, flex: '0 0 auto' }}>{(job.companyName || '?')[0]}</div>
@@ -184,9 +189,11 @@ export default function StudentDashboard() {
 
         {/* Eligible drives preview */}
         <div className="card p">
-          <div className="sec-head">
+          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('jobs')}>
             <h3>Open drives</h3>
-            <div className="sub">{eligibleJobs.length} eligible</div>
+            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>
+              View all →
+            </span>
           </div>
           {eligibleJobs.length === 0 ? (
             <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
@@ -198,9 +205,12 @@ export default function StudentDashboard() {
                 const applied = appliedJobIds.has(j.id)
                 const app = appMap[j.id]
                 return (
-                  <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 10,
+                  <div key={j.id} onClick={() => onNavigate?.('jobs')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                     padding: '10px 12px', background: '#fafbff', borderRadius: 10,
-                    border: '1px solid var(--line)' }}>
+                    border: '1px solid var(--line)', transition: '.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
                     <div style={{ width: 34, height: 34, borderRadius: 9, background: '#4C5BD4',
                       display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff',
                       fontSize: 14, flex: '0 0 auto' }}>{(j.companyName || '?')[0]}</div>

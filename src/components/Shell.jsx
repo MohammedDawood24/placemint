@@ -215,7 +215,7 @@ export default function Shell() {
           <button className="icon-btn">{Icons.bell}<span className="dot" /></button>
         </header>
         <div className="content">
-          <Screen />
+          <Screen onNavigate={setView} />
         </div>
       </div>
     </div>
