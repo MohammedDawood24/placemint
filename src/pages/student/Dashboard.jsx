@@ -37,8 +37,9 @@ export default function StudentDashboard({ onNavigate }) {
 
   const { pct, items, missing } = calcProfileCompletion(student, userData)
   const isPlaced = student?.placementStatus === 'placed'
-  const hasOffer = myApps.some(a => a.stage >= 5 && a.status === 'active')
-  const showConfetti = isPlaced || hasOffer
+  const hasOffer = myApps.some(a => a.stage === 5 && a.status === 'active')
+  const hasPlaced = myApps.some(a => a.stage >= 6 && a.status !== 'rejected') || isPlaced
+  const showConfetti = hasPlaced || hasOffer
   const appliedJobIds = new Set(myApps.map(a => a.jobId))
   const appMap = {}
   myApps.forEach(a => { appMap[a.jobId] = a })
@@ -60,7 +61,7 @@ export default function StudentDashboard({ onNavigate }) {
 
   return (
     <>
-      {showConfetti && <Confetti duration={4000} />}
+      {showConfetti && <Confetti duration={4500} variant={hasPlaced ? 'cannon' : 'simple'} />}
 
       {/* Placed banner */}
       {isPlaced && (

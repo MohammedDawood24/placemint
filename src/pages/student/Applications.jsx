@@ -55,7 +55,8 @@ export default function StudentApplications() {
   const rejected = apps.filter(a => a.status === 'rejected')
   const placed = active.filter(a => a.stage >= 6)
   const inProgress = active.filter(a => a.stage > 0 && a.stage < 6)
-  const hasOfferOrPlaced = active.some(a => a.stage >= 5)
+  const hasOffer = active.some(a => a.stage === 5)
+  const hasPlaced = placed.length > 0
 
   const [acceptModal, setAcceptModal] = useState(null)
   const [acceptConsent, setAcceptConsent] = useState(false)
@@ -91,7 +92,7 @@ export default function StudentApplications() {
 
   return (
     <>
-      {hasOfferOrPlaced && <Confetti duration={4000} />}
+      {(hasPlaced || hasOffer) && <Confetti duration={4500} variant={hasPlaced ? "cannon" : "simple"} />}
 
       {/* Stats */}
       <div className="cards-row c4" style={{ marginBottom: 20 }}>
