@@ -401,3 +401,11 @@ table.tbl { width: 100%; border-collapse: collapse; }
 @media (max-width: 920px) {
   .grid-resp { grid-template-columns: 1fr !important; }
 }
+
+/* Notification bell */
+.icon-btn { position: relative; background: none; border: 1.5px solid var(--line); width: 40px; height: 40px;
+  border-radius: 10px; display: grid; place-items: center; cursor: pointer; color: var(--ink-2); transition: .15s; }
+.icon-btn:hover { background: var(--indigo-soft); border-color: var(--indigo); color: var(--indigo); }
+@media (max-width: 480px) {
+  .icon-btn { width: 36px; height: 36px; border-radius: 8px; }
+}

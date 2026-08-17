@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useCollection, where, orderBy, updateDocument } from '../hooks/useFirestore'
 import { ROLE_THEME } from '../config/roles'
 import { useSite } from '../contexts/SiteContext'
 import { Icons, initials } from './Icons'
@@ -227,12 +228,158 @@ export default function Shell() {
             <h1>{title}</h1>
           </div>
           <div className="search">{Icons.search}<input placeholder="Search students, companies…" /></div>
-          <button className="icon-btn">{Icons.bell}<span className="dot" /></button>
+          <NotificationBell userEmail={userData?.email} role={role} />
         </header>
         <div className="content">
           <Screen onNavigate={handleNav} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── NOTIFICATION BELL ───
+function NotificationBell({ userEmail, role }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Fetch notifications for this user's email
+  const { data: allNotifs } = useCollection('emailQueue',
+    [orderBy('createdAt', 'desc')], [])
+
+  // Filter: show notifications addressed to this user, or admin sees all admin-category ones
+  const notifications = allNotifs.filter(n => {
+    if (n.to === userEmail) return true
+    if (role === 'admin' && (n.category || '').startsWith('admin_')) return true
+    return false
+  }).slice(0, 30)
+
+  const unreadCount = notifications.filter(n => !n.readBy?.includes(userEmail)).length
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  async function markRead(notif) {
+    const readBy = notif.readBy || []
+    if (!readBy.includes(userEmail)) {
+      await updateDocument('emailQueue', notif.id, { readBy: [...readBy, userEmail] })
+    }
+  }
+
+  async function markAllRead() {
+    const unread = notifications.filter(n => !n.readBy?.includes(userEmail))
+    for (const n of unread) {
+      await updateDocument('emailQueue', n.id, { readBy: [...(n.readBy || []), userEmail] })
+    }
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return ''
+    const s = ts.seconds ? ts.seconds * 1000 : ts
+    const diff = Date.now() - s
+    if (diff < 60000) return 'Just now'
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+    return `${Math.floor(diff / 86400000)}d ago`
+  }
+
+  // Extract clean subject (remove prefix)
+  function cleanSubject(subj) {
+    return (subj || '').replace(/^\[.*?\]\s*/, '')
+  }
+
+  // Category to icon
+  const catIcons = {
+    user_registered: '👤', user_approved: '✓', new_job_student: '📋',
+    stage_update: '🔄', offer_received: '🎉', profile_review: '📝', placed: '🎓',
+    company_new_applicant: '👤', company_offer_accepted: '✓', company_admin_approved: '✓', company_created: '🏢',
+    dept_coordinator_assigned: '📋', dept_new_job: '📋', dept_student_placed: '🎓',
+    admin_new_applicant: '👤', admin_offer_sent: '📋', admin_student_placed: '🎓',
+    admin_new_job: '📋', admin_pending: '⚡', admin_weekly_digest: '📊',
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button className="icon-btn" onClick={() => setOpen(!open)}
+        style={{ position: 'relative' }}>
+        {Icons.bell}
+        {unreadCount > 0 && (
+          <span style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18,
+            borderRadius: '50%', background: 'var(--rose)', color: '#fff', fontSize: 10,
+            fontWeight: 700, display: 'grid', placeItems: 'center', border: '2px solid #fff' }}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8,
+          width: 380, maxHeight: '70vh', background: '#fff', borderRadius: 14,
+          boxShadow: '0 12px 40px rgba(14,22,51,.15)', border: '1px solid var(--line)',
+          overflow: 'hidden', zIndex: 999 }}>
+          {/* Header */}
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Notifications</h4>
+            {unreadCount > 0 && (
+              <button onClick={markAllRead}
+                style={{ background: 'none', border: 'none', color: 'var(--indigo)', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>Mark all read</button>
+            )}
+          </div>
+
+          {/* List */}
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(70vh - 52px)' }}>
+            {notifications.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+                No notifications yet
+              </div>
+            ) : (
+              notifications.map(n => {
+                const isRead = n.readBy?.includes(userEmail)
+                return (
+                  <div key={n.id}
+                    onClick={() => { markRead(n) }}
+                    style={{ padding: '12px 18px', borderBottom: '1px solid #f3f4f6',
+                      cursor: 'pointer', transition: '.1s',
+                      background: isRead ? '#fff' : '#f0f3ff' }}
+                    onMouseOver={e => e.currentTarget.style.background = '#f8f9fc'}
+                    onMouseOut={e => e.currentTarget.style.background = isRead ? '#fff' : '#f0f3ff'}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 18, flex: '0 0 auto', marginTop: 1 }}>
+                        {catIcons[n.category] || '🔔'}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: isRead ? 500 : 700,
+                          color: 'var(--ink)', lineHeight: 1.4 }}>
+                          {cleanSubject(n.subject)}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{timeAgo(n.createdAt)}</span>
+                          {n.status === 'sent' && (
+                            <span style={{ fontSize: 10, color: 'var(--green)' }}>✓ emailed</span>
+                          )}
+                          {!isRead && (
+                            <span style={{ width: 7, height: 7, borderRadius: '50%',
+                              background: 'var(--indigo)', marginLeft: 'auto', flex: '0 0 auto' }} />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
