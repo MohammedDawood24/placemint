@@ -4,7 +4,7 @@ import { useDocument, useCollection, where, addDocument } from '../../hooks/useF
 import { Icons } from '../../components/Icons'
 import { calcProfileCompletion } from './Dashboard'
 import { serverTimestamp } from 'firebase/firestore'
-import { notifyApplicationReceived } from '../../utils/email'
+import { notifyCompanyNewApplicant } from '../../utils/email'
 import toast from 'react-hot-toast'
 
 const STAGES = ['Applied', 'Shortlisted', 'Aptitude', 'Technical', 'HR', 'Offer', 'Placed']
@@ -80,7 +80,7 @@ export default function StudentJobs() {
       })
       toast.success(`Applied for ${job.role} at ${job.companyName}`)
       // Notify company (fire and forget)
-      notifyApplicationReceived(job.companyName, job.companyName, userData.displayName, job.role).catch(() => {})
+      notifyCompanyNewApplicant(job.companyName, job.companyName, userData.displayName, job.role).catch(() => {})
     } catch (e) { toast.error('Apply failed: ' + e.message) }
     finally { setApplying(null) }
   }
