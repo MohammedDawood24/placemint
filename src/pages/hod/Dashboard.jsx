@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useCollection, where } from '../../hooks/useFirestore'
+import { useCollection, where, orderBy } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { formatPackage, toLPA } from '../../utils/formatPackage'
@@ -29,6 +29,8 @@ export default function HodDashboard() {
   const { data: jobs } = useCollection('jobs', [], [])
   const { data: applications } = useCollection('applications', [], [])
   const { data: activities } = useCollection('activities', [], [])
+  const { data: notices } = useCollection('notices',
+    [where('department', '==', dept), orderBy('createdAt', 'desc')], [dept])
 
   // Department-scoped data
   const deptUsers = allUsers.filter(u =>
@@ -144,6 +146,40 @@ export default function HodDashboard() {
           v={eligibleJobs.length} l="Open drives"
           sub={`${activeApps.length} applications`} />
       </div>
+
+      {/* Active notices */}
+      {(() => {
+        const now = new Date()
+        const activeNotices = (notices || []).filter(n => !n.expiresAt ||
+          (n.expiresAt?.seconds ? n.expiresAt.seconds * 1000 > now.getTime() : new Date(n.expiresAt) > now))
+        if (activeNotices.length === 0) return null
+        return (
+          <div className="card p" style={{ marginBottom: 16 }}>
+            <div className="sec-head">
+              <div><h3>📌 Active notices</h3><div className="sub">{activeNotices.length} on the board</div></div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {activeNotices.slice(0, 4).map(n => {
+                const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : null
+                return (
+                  <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)' }}>
+                    <span style={{ fontSize: 18 }}>📌</span>
+                    <div style={{ flex: 1 }}>
+                      <b style={{ fontSize: 13.5 }}>{n.title}</b>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                        {eventDate && `📅 ${eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
+                        {eventDate && n.eventTime && ` · ${n.eventTime}`}
+                        {' · '}{n.createdByName || dept}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Pending actions */}
       {(pendingApprovals.length > 0 || pendingSemReviews > 0 || pendingMarksReview > 0 || backlogStats.totalActive > 0) && (

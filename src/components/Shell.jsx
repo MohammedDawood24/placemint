@@ -18,6 +18,7 @@ import AdminCompanies from '../pages/admin/Companies'
 import HodDashboard from '../pages/hod/Dashboard'
 import HodApprovals from '../pages/hod/Approvals'
 import HodReports from '../pages/hod/Reports'
+import NoticeBoard from '../pages/hod/NoticeBoard'
 
 import CompanyDashboard from '../pages/company/Dashboard'
 import CompanyJobs from '../pages/company/Jobs'
@@ -29,6 +30,7 @@ import StudentDashboard from '../pages/student/Dashboard'
 import StudentJobs from '../pages/student/Jobs'
 import StudentApplications from '../pages/student/Applications'
 import StudentProfile from '../pages/student/Profile'
+import StudentNoticeBoard from '../pages/student/NoticeBoard'
 
 /* Stub for screens not yet built */
 function Coming({ label }) {
@@ -65,7 +67,7 @@ const NAV = {
     { g: 'Department', items: [
       { k: 'approvals', label: 'Approvals', ic: Icons.check },
       { k: 'students', label: 'Students', ic: Icons.cap },
-      { k: 'activities', label: 'Activities', ic: Icons.cal },
+      { k: 'noticeboard', label: 'Notice board', ic: Icons.spark },
       { k: 'reports', label: 'Reports', ic: Icons.chart },
     ]},
   ],
@@ -74,7 +76,7 @@ const NAV = {
     { g: 'Department', items: [
       { k: 'approvals', label: 'Pending list', ic: Icons.check },
       { k: 'students', label: 'Students', ic: Icons.cap },
-      { k: 'activities', label: 'Activities', ic: Icons.cal },
+      { k: 'noticeboard', label: 'Notice board', ic: Icons.spark },
     ]},
   ],
   company: [
@@ -91,6 +93,7 @@ const NAV = {
     { g: 'Placements', items: [
       { k: 'jobs', label: 'Open drives', ic: Icons.brief },
       { k: 'applications', label: 'My applications', ic: Icons.check },
+      { k: 'noticeboard', label: 'Notice board', ic: Icons.spark },
       { k: 'profile', label: 'My profile', ic: Icons.cap },
     ]},
   ],
@@ -112,14 +115,14 @@ const SCREENS = {
     dash: HodDashboard,
     approvals: HodApprovals,
     students: AdminStudents,
-    activities: () => <Coming label="Activities" />,
+    noticeboard: NoticeBoard,
     reports: HodReports,
   },
   coordinator: {
     dash: HodDashboard,
     approvals: HodApprovals,
     students: AdminStudents,
-    activities: () => <Coming label="Activities" />,
+    noticeboard: NoticeBoard,
   },
   company: {
     dash: CompanyDashboard,

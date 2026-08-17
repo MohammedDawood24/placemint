@@ -1,6 +1,6 @@
 import { formatPackage } from '../../utils/formatPackage'
 import { useAuth } from '../../contexts/AuthContext'
-import { useDocument, useCollection, where } from '../../hooks/useFirestore'
+import { useDocument, useCollection, where, orderBy } from '../../hooks/useFirestore'
 import { Icons } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import Confetti from '../../components/Confetti'
@@ -34,6 +34,22 @@ export default function StudentDashboard({ onNavigate }) {
   const { data: jobs } = useCollection('jobs', [where('status', '==', 'open')], [])
   const { data: myApps } = useCollection('applications',
     [where('studentId', '==', userData?.id || 'x')], [userData?.id])
+  const { data: notices } = useCollection('notices',
+    [where('department', '==', student?.department || 'x'), orderBy('createdAt', 'desc')],
+    [student?.department])
+  const { data: allNotices } = useCollection('notices', [], [])
+
+  // Active notices for student's department
+  const now = new Date()
+  const activeNotices = allNotices.filter(n => {
+    if (n.department && student?.department &&
+      n.department.toUpperCase() !== student.department.toUpperCase()) return false
+    if (n.expiresAt) {
+      const exp = n.expiresAt.seconds ? new Date(n.expiresAt.seconds * 1000) : new Date(n.expiresAt)
+      if (exp <= now) return false
+    }
+    return true
+  })
 
   const { pct, items, missing } = calcProfileCompletion(student, userData)
   const isPlaced = student?.placementStatus === 'placed'
@@ -143,6 +159,94 @@ export default function StudentDashboard({ onNavigate }) {
           ))}
         </div>
       </div>
+
+      {/* Active notices from department */}
+      {activeNotices.length > 0 && (
+        <div className="card p" style={{ marginBottom: 20 }}>
+          <div className="sec-head">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>📌</span>
+              <div>
+                <h3>Notice Board</h3>
+                <div className="sub">{activeNotices.length} active notice{activeNotices.length !== 1 ? 's' : ''} from {student?.department || 'your department'}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {activeNotices.map(n => {
+              const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : n.eventDate ? new Date(n.eventDate) : null
+              return (
+                <div key={n.id} style={{ display: 'flex', gap: 12, padding: '14px 16px',
+                  background: n.priority === 'urgent' ? 'var(--rose-soft)' : '#fafbff',
+                  borderRadius: 10, border: `1px solid ${n.priority === 'urgent' ? '#f5c6c8' : 'var(--line)'}` }}>
+                  <span style={{ fontSize: 18, flex: '0 0 auto', marginTop: 1 }}>
+                    {n.priority === 'urgent' ? '🚨' : '📌'}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <b style={{ fontSize: 14, fontWeight: 700 }}>{n.title}</b>
+                      {n.priority === 'urgent' && <span className="badge b-rose" style={{ fontSize: 10 }}>Urgent</span>}
+                    </div>
+                    {n.description && (
+                      <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 6,
+                        maxHeight: 60, overflow: 'hidden' }}
+                        dangerouslySetInnerHTML={{ __html: n.description }} />
+                    )}
+                    <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--muted)' }}>
+                      {eventDate && <span>📅 {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {n.eventTime ? ` · ⏰ ${n.eventTime}` : ''}</span>}
+                      {n.postedBy && <span>By: {n.postedBy}</span>}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Active notices from department */}
+      {(() => {
+        const now = new Date()
+        const activeNotices = (notices || []).filter(n => !n.expiresAt ||
+          (n.expiresAt?.seconds ? n.expiresAt.seconds * 1000 > now.getTime() : new Date(n.expiresAt) > now))
+        if (activeNotices.length === 0) return null
+        return (
+          <div className="card p" style={{ marginBottom: 20 }}>
+            <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('noticeboard')}>
+              <div>
+                <h3>📌 Department notices</h3>
+                <div className="sub">{activeNotices.length} active</div>
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {activeNotices.slice(0, 3).map(n => {
+                const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : null
+                return (
+                  <div key={n.id} onClick={() => onNavigate?.('noticeboard')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                      background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)',
+                      cursor: 'pointer', transition: '.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
+                    <span style={{ fontSize: 18 }}>📌</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b style={{ fontSize: 13.5, fontWeight: 600, display: 'block' }}>{n.title}</b>
+                      {eventDate && (
+                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                          📅 {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          {n.eventTime && ` · ${n.eventTime}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
         {/* Active applications */}
