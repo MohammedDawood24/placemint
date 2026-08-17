@@ -519,38 +519,29 @@ function BranchManager({ settings }) {
   )
 }
 
-// ─── EMAIL CONFIG ───
+// ─── SMTP EMAIL CONFIG ───
 function EmailConfig({ settings }) {
-  const config = settings?.emailConfig || {}
+  const config = settings?.smtpConfig || {}
   const [form, setForm] = useState({
-    serviceId: config.serviceId || '',
-    templateId: config.templateId || '',
-    publicKey: config.publicKey || '',
-    fromName: config.fromName || '',
-    replyTo: config.replyTo || '',
+    host: config.host || '', port: config.port || '587',
+    username: config.username || '', password: config.password || '',
+    security: config.security || 'TLS',
+    fromEmail: config.fromEmail || '', fromName: config.fromName || '',
     enabled: config.enabled !== false,
-    // Notification toggles
-    notifyNewJob: config.notifyNewJob !== false,
-    notifyApproval: config.notifyApproval !== false,
-    notifyMarks: config.notifyMarks !== false,
-    notifyOffer: config.notifyOffer !== false,
-    notifyStageUpdate: config.notifyStageUpdate !== false,
-    notifyPlaced: config.notifyPlaced !== false,
+    adminEmail: config.adminEmail || '',
   })
   const [saving, setSaving] = useState(false)
-  const [testEmail, setTestEmail] = useState('')
-  const [testing, setTesting] = useState(false)
+  const [showPw, setShowPw] = useState(false)
 
   useEffect(() => {
-    if (settings?.emailConfig) {
-      const c = settings.emailConfig
+    if (settings?.smtpConfig) {
+      const c = settings.smtpConfig
       setForm({
-        serviceId: c.serviceId || '', templateId: c.templateId || '',
-        publicKey: c.publicKey || '', fromName: c.fromName || '',
-        replyTo: c.replyTo || '', enabled: c.enabled !== false,
-        notifyNewJob: c.notifyNewJob !== false, notifyApproval: c.notifyApproval !== false,
-        notifyMarks: c.notifyMarks !== false, notifyOffer: c.notifyOffer !== false,
-        notifyStageUpdate: c.notifyStageUpdate !== false, notifyPlaced: c.notifyPlaced !== false,
+        host: c.host || '', port: c.port || '587',
+        username: c.username || '', password: c.password || '',
+        security: c.security || 'TLS',
+        fromEmail: c.fromEmail || '', fromName: c.fromName || '',
+        enabled: c.enabled !== false, adminEmail: c.adminEmail || '',
       })
     }
   }, [settings])
@@ -560,41 +551,11 @@ function EmailConfig({ settings }) {
   async function handleSave() {
     setSaving(true)
     try {
-      await saveSetting({ emailConfig: form })
+      await saveSetting({ smtpConfig: form })
       resetEmailConfig()
-      toast.success('Email configuration saved')
-    } catch (e) {
-      toast.error('Save failed: ' + e.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleTest() {
-    if (!testEmail) return toast.error('Enter a test email address')
-    if (!form.serviceId || !form.publicKey) return toast.error('Configure EmailJS credentials first')
-    setTesting(true)
-    try {
-      const emailjs = await import('@emailjs/browser')
-      await emailjs.default.send(
-        form.serviceId,
-        form.templateId || 'default_template',
-        {
-          to_email: testEmail,
-          to_name: 'Test User',
-          subject: 'PlaceMint — Test Email',
-          message: '<h3>Email Configuration Test</h3><p>If you received this email, your EmailJS configuration is working correctly.</p>',
-          from_name: form.fromName || 'Placement Cell',
-          reply_to: form.replyTo || '',
-        },
-        form.publicKey
-      )
-      toast.success('Test email sent! Check your inbox.')
-    } catch (e) {
-      toast.error('Test failed: ' + (e.text || e.message))
-    } finally {
-      setTesting(false)
-    }
+      toast.success('SMTP configuration saved')
+    } catch (e) { toast.error('Save failed: ' + e.message) }
+    finally { setSaving(false) }
   }
 
   return (
@@ -602,8 +563,8 @@ function EmailConfig({ settings }) {
       <div className="card p">
         <div className="sec-head">
           <div>
-            <h3>Email notifications (EmailJS)</h3>
-            <div className="sub">Send automated emails for placement events</div>
+            <h3>SMTP Configuration</h3>
+            <div className="sub">Email server settings for sending notifications</div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input type="checkbox" checked={form.enabled} onChange={e => set('enabled', e.target.checked)}
@@ -614,102 +575,134 @@ function EmailConfig({ settings }) {
           </label>
         </div>
 
-        <div style={{ padding: '12px 14px', background: '#f8f9fc', borderRadius: 10, marginBottom: 16,
-          fontSize: 13, lineHeight: 1.6, color: 'var(--ink-2)' }}>
-          <b>Setup steps:</b>
-          <ol style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-            <li>Go to <a href="https://www.emailjs.com" target="_blank" rel="noreferrer"
-              style={{ color: 'var(--indigo)', fontWeight: 600 }}>emailjs.com</a> and create a free account</li>
-            <li>Add an email service (Gmail, Outlook, etc.) → copy the <b>Service ID</b></li>
-            <li>Create an email template with variables: <code style={{ background: '#e8eaf4', padding: '1px 5px',
-              borderRadius: 4, fontSize: 12 }}>{'{{to_email}} {{to_name}} {{subject}} {{message}} {{from_name}}'}</code></li>
-            <li>Copy the <b>Template ID</b> and your <b>Public Key</b> (from Account → API Keys)</li>
-          </ol>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0 14px' }}>
+          <div className="field">
+            <label>SMTP hostname *</label>
+            <input value={form.host} onChange={e => set('host', e.target.value)}
+              placeholder="smtp.gmail.com" />
+          </div>
+          <div className="field">
+            <label>Port *</label>
+            <input value={form.port} onChange={e => set('port', e.target.value)}
+              placeholder="587" />
+          </div>
+          <div className="field">
+            <label>Security</label>
+            <select value={form.security} onChange={e => set('security', e.target.value)}>
+              <option value="TLS">TLS</option>
+              <option value="SSL">SSL</option>
+              <option value="STARTTLS">STARTTLS</option>
+              <option value="NONE">None</option>
+            </select>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 14px' }}>
           <div className="field">
-            <label>Service ID *</label>
-            <input value={form.serviceId} onChange={e => set('serviceId', e.target.value)}
-              placeholder="service_xxxxxxx" />
+            <label>Username / Email *</label>
+            <input value={form.username} onChange={e => set('username', e.target.value)}
+              placeholder="placement@college.edu" />
           </div>
           <div className="field">
-            <label>Template ID *</label>
-            <input value={form.templateId} onChange={e => set('templateId', e.target.value)}
-              placeholder="template_xxxxxxx" />
+            <label>Password *</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} value={form.password}
+                onChange={e => set('password', e.target.value)}
+                placeholder="App password or SMTP password" />
+              <button type="button" onClick={() => setShowPw(!showPw)}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>
+                {showPw ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 14px' }}>
           <div className="field">
-            <label>Public Key *</label>
-            <input value={form.publicKey} onChange={e => set('publicKey', e.target.value)}
-              placeholder="Your EmailJS public key" />
+            <label>From email</label>
+            <input type="email" value={form.fromEmail} onChange={e => set('fromEmail', e.target.value)}
+              placeholder="noreply@college.edu" />
           </div>
           <div className="field">
             <label>From name</label>
             <input value={form.fromName} onChange={e => set('fromName', e.target.value)}
               placeholder="Placement Cell" />
           </div>
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label>Reply-to email</label>
-            <input type="email" value={form.replyTo} onChange={e => set('replyTo', e.target.value)}
-              placeholder="placement@college.edu" />
-          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-          <button className="btn btn-pri" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save configuration'}
-          </button>
+        <div className="field">
+          <label>Admin notification email *</label>
+          <input type="email" value={form.adminEmail} onChange={e => set('adminEmail', e.target.value)}
+            placeholder="admin@college.edu — receives all admin notifications" />
         </div>
 
-        {/* Test email */}
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Send test email</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input value={testEmail} onChange={e => setTestEmail(e.target.value)}
-              placeholder="your-email@example.com" type="email"
-              style={{ flex: 1, padding: '8px 12px', border: '1.5px solid var(--line)',
-                borderRadius: 8, fontSize: 13, fontFamily: 'inherit' }} />
-            <button className="btn btn-ghost" onClick={handleTest} disabled={testing}>
-              {testing ? 'Sending…' : 'Send test'}
-            </button>
-          </div>
+        <button className="btn btn-pri" onClick={handleSave} disabled={saving} style={{ marginTop: 6 }}>
+          {saving ? 'Saving…' : 'Save SMTP configuration'}
+        </button>
+
+        <div style={{ marginTop: 16, padding: '14px 16px', background: '#f8f9fc', borderRadius: 10,
+          fontSize: 13, lineHeight: 1.6, color: 'var(--ink-2)' }}>
+          <b>How it works:</b>
+          <p style={{ margin: '8px 0 0' }}>Emails are queued in Firestore (<code style={{ background: '#e8eaf4',
+            padding: '1px 5px', borderRadius: 4, fontSize: 12 }}>emailQueue</code> collection).
+            Deploy the provided Cloud Function to process the queue and send via your SMTP server.</p>
+          <p style={{ margin: '8px 0 0' }}><b>For Gmail:</b> Use <code>smtp.gmail.com</code>, port <code>587</code>,
+            TLS, and an <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer"
+            style={{ color: 'var(--indigo)' }}>App Password</a> (not your regular password).</p>
         </div>
       </div>
 
-      {/* Notification toggles */}
+      {/* Notification reference */}
       <div className="card p">
         <div className="sec-head"><h3>Notification events</h3></div>
-        <div className="sub" style={{ marginTop: -8, marginBottom: 14 }}>
-          Choose which events trigger email notifications
+        <div className="sub" style={{ marginBottom: 14, marginTop: -8 }}>
+          Emails are sent automatically for these events when SMTP is configured
         </div>
 
         {[
-          ['notifyNewJob', '📋 New job posting', 'Notify eligible students when a new drive is published'],
-          ['notifyApproval', '✓ Registration approved', 'Notify students when their registration is approved'],
-          ['notifyMarks', '📝 Marks approved', 'Notify students when their 10th/12th marks are verified'],
-          ['notifyOffer', '🎉 Offer received', 'Notify students when they receive an offer from a company'],
-          ['notifyStageUpdate', '🔄 Stage updates', 'Notify students when their application stage changes'],
-          ['notifyPlaced', '🎓 Placed', 'Notify students when they are officially placed'],
-        ].map(([key, label, desc]) => (
-          <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px',
-            borderRadius: 10, cursor: 'pointer', marginBottom: 6,
-            background: form[key] ? '#fafbff' : '#f8f8f8',
-            border: `1.5px solid ${form[key] ? 'var(--indigo-soft)' : 'transparent'}`,
-            transition: '.15s' }}>
-            <input type="checkbox" checked={form[key]} onChange={e => set(key, e.target.checked)}
-              style={{ width: 18, height: 18, marginTop: 2, accentColor: 'var(--indigo)' }} />
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{label}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{desc}</div>
+          ['👤 Student', [
+            'Registration received',
+            'Registration approved',
+            'New job posting (eligible)',
+            'Application stage change',
+            'Offer letter received',
+            'Profile data approved/rejected',
+            'Placed confirmation',
+          ]],
+          ['🏢 Company', [
+            'Account created (with credentials)',
+            'New student application',
+            'Student accepts offer',
+            'Admin approves placement',
+          ]],
+          ['📋 Department', [
+            'Coordinator assigned',
+            'New job posting (dept relevant)',
+            'Student registers for a drive',
+            'Student placed from dept',
+          ]],
+          ['⚙️ Admin', [
+            'Student registers for a job',
+            'Company posts a new job',
+            'Offer letter sent to student',
+            'Student placed',
+            'Pending approvals',
+            'Weekly digest (every Monday 8 AM)',
+          ]],
+        ].map(([group, items]) => (
+          <div key={group} style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{group}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {items.map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 10px', background: '#fafbff', borderRadius: 6, fontSize: 12.5 }}>
+                  <span style={{ color: 'var(--green)' }}>✓</span> {item}
+                </div>
+              ))}
             </div>
-          </label>
+          </div>
         ))}
-
-        <div style={{ marginTop: 12, padding: '10px 12px', background: '#f8f9fc', borderRadius: 8,
-          fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-          <b>Free tier:</b> EmailJS allows 200 emails/month on the free plan. For higher volumes,
-          consider upgrading your EmailJS plan.
-        </div>
       </div>
     </div>
   )
