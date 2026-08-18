@@ -355,6 +355,7 @@ table.tbl { width: 100%; border-collapse: collapse; }
   .topbar { padding: 14px 16px; gap: 10px; }
   .topbar h1 { font-size: 17px; }
   .search { display: none; }
+  .topbar > div:first-of-type { flex: 1; }
 
   /* Content */
   .content { padding: 16px 14px 40px; }
@@ -408,4 +409,8 @@ table.tbl { width: 100%; border-collapse: collapse; }
 .icon-btn:hover { background: var(--indigo-soft); border-color: var(--indigo); color: var(--indigo); }
 @media (max-width: 480px) {
   .icon-btn { width: 36px; height: 36px; border-radius: 8px; }
+}
+
+@media (max-width: 480px) {
+  .notif-dropdown { width: calc(100vw - 24px) !important; right: -8px !important; }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useCollection, where, orderBy, addDocument, updateDocument, deleteDocument } from '../../hooks/useFirestore'
+import { useCollection, where, addDocument, updateDocument, deleteDocument } from '../../hooks/useFirestore'
 import { Icons } from '../../components/Icons'
 import RichEditor from '../../components/RichEditor'
 import toast from 'react-hot-toast'
@@ -9,7 +9,7 @@ export default function NoticeBoard() {
   const { userData } = useAuth()
   const dept = userData?.department || ''
   const { data: notices, loading } = useCollection('notices',
-    [where('department', '==', dept), orderBy('createdAt', 'desc')], [dept])
+    [where('department', '==', dept)], [dept])
 
   const [view, setView] = useState('list') // list | create | edit
   const [editNotice, setEditNotice] = useState(null)

@@ -35,10 +35,10 @@ export default function StudentDashboard({ onNavigate }) {
   const { data: myApps } = useCollection('applications',
     [where('studentId', '==', userData?.id || 'x')], [userData?.id])
   const { data: notices } = useCollection('notices',
-    [where('department', '==', student?.department || 'x'), orderBy('createdAt', 'desc')],
+    [where('department', '==', student?.department || 'x')],
     [student?.department])
 
-  // Active notices for student's department
+  // Active notices for student's department, sorted newest first
   const now = new Date()
   const activeNotices = (notices || []).filter(n => {
     if (n.expiresAt) {
@@ -46,6 +46,10 @@ export default function StudentDashboard({ onNavigate }) {
       if (exp <= now) return false
     }
     return true
+  }).sort((a, b) => {
+    const ta = a.createdAt?.seconds || 0
+    const tb = b.createdAt?.seconds || 0
+    return tb - ta
   })
 
   const { pct, items, missing } = calcProfileCompletion(student, userData)

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useCollection, where, orderBy } from '../../hooks/useFirestore'
+import { useCollection, where } from '../../hooks/useFirestore'
 import { Icons, initials } from '../../components/Icons'
 import { useSite } from '../../contexts/SiteContext'
 import { formatPackage, toLPA } from '../../utils/formatPackage'
@@ -30,7 +30,7 @@ export default function HodDashboard() {
   const { data: applications } = useCollection('applications', [], [])
   const { data: activities } = useCollection('activities', [], [])
   const { data: notices } = useCollection('notices',
-    [where('department', '==', dept), orderBy('createdAt', 'desc')], [dept])
+    [where('department', '==', dept)], [dept])
 
   // Department-scoped data
   const deptUsers = allUsers.filter(u =>

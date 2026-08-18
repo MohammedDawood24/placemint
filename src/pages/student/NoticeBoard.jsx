@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useCollection, where, orderBy } from '../../hooks/useFirestore'
+import { useCollection, where } from '../../hooks/useFirestore'
 import Modal from '../../components/Modal'
 
 export default function StudentNoticeBoard() {
   const { userData } = useAuth()
   const dept = userData?.department || ''
   const { data: notices, loading } = useCollection('notices',
-    [where('department', '==', dept), orderBy('createdAt', 'desc')], [dept])
+    [where('department', '==', dept)], [dept])
   const [viewNotice, setViewNotice] = useState(null)
 
   const now = new Date()
