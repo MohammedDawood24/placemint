@@ -147,40 +147,6 @@ export default function HodDashboard() {
           sub={`${activeApps.length} applications`} />
       </div>
 
-      {/* Active notices */}
-      {(() => {
-        const now = new Date()
-        const activeNotices = (notices || []).filter(n => !n.expiresAt ||
-          (n.expiresAt?.seconds ? n.expiresAt.seconds * 1000 > now.getTime() : new Date(n.expiresAt) > now))
-        if (activeNotices.length === 0) return null
-        return (
-          <div className="card p" style={{ marginBottom: 16 }}>
-            <div className="sec-head">
-              <div><h3>📌 Active notices</h3><div className="sub">{activeNotices.length} on the board</div></div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {activeNotices.slice(0, 4).map(n => {
-                const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : null
-                return (
-                  <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)' }}>
-                    <span style={{ fontSize: 18 }}>📌</span>
-                    <div style={{ flex: 1 }}>
-                      <b style={{ fontSize: 13.5 }}>{n.title}</b>
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                        {eventDate && `📅 ${eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
-                        {eventDate && n.eventTime && ` · ${n.eventTime}`}
-                        {' · '}{n.createdByName || dept}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })()}
-
       {/* Pending actions */}
       {(pendingApprovals.length > 0 || pendingSemReviews > 0 || pendingMarksReview > 0 || backlogStats.totalActive > 0) && (
         <div className="card p" style={{ marginBottom: 16 }}>
@@ -348,49 +314,66 @@ export default function HodDashboard() {
           )}
         </div>
 
-        {/* Activities */}
+        {/* Virtual Notice Board */}
         <div className="card p">
           <div className="sec-head">
-            <h3>Recent activities</h3>
-            <div className="sub">{deptActivities.length} event{deptActivities.length !== 1 ? 's' : ''}</div>
+            <h3>📌 Virtual Notice Board</h3>
+            <div className="sub">{(() => {
+              const now = new Date()
+              return (notices || []).filter(n => !n.expiresAt ||
+                (n.expiresAt?.seconds ? n.expiresAt.seconds * 1000 > now.getTime() : new Date(n.expiresAt) > now)).length
+            })()} active</div>
           </div>
-          {deptActivities.length === 0 ? (
-            <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-              No activities scheduled.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {deptActivities.slice(0, 5).map(a => {
-                const d = a.date?.seconds ? new Date(a.date.seconds * 1000) : null
-                const isPast = d && d < new Date()
-                return (
-                  <div key={a.id} style={{ display: 'flex', gap: 12, padding: '10px 12px',
-                    background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)',
-                    opacity: isPast ? 0.6 : 1 }}>
-                    {d && (
-                      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--indigo-soft)',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        flex: '0 0 auto' }}>
-                        <b style={{ fontSize: 16, fontWeight: 700, color: 'var(--indigo-d)', lineHeight: 1 }}>
-                          {d.getDate()}</b>
-                        <span style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--muted)' }}>
-                          {d.toLocaleDateString('en', { month: 'short' })}</span>
-                      </div>
-                    )}
-                    <div style={{ flex: 1 }}>
-                      <b style={{ fontSize: 13, fontWeight: 600, display: 'block' }}>{a.title}</b>
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                        {a.speaker} · {a.location}
+          {(() => {
+            const now = new Date()
+            const activeN = (notices || []).filter(n => !n.expiresAt ||
+              (n.expiresAt?.seconds ? n.expiresAt.seconds * 1000 > now.getTime() : new Date(n.expiresAt) > now))
+            if (activeN.length === 0) return (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                No active notices. Post one from the Notice Board page.
+              </div>
+            )
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {activeN.slice(0, 5).map(n => {
+                  const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : null
+                  const expiresAt = n.expiresAt?.seconds ? new Date(n.expiresAt.seconds * 1000) : null
+                  return (
+                    <div key={n.id} style={{ padding: '12px 14px', background: '#fafbff',
+                      borderRadius: 10, border: '1px solid var(--line)' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        {eventDate ? (
+                          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--indigo-soft)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            flex: '0 0 auto' }}>
+                            <b style={{ fontSize: 16, fontWeight: 700, color: 'var(--indigo-d)', lineHeight: 1 }}>
+                              {eventDate.getDate()}</b>
+                            <span style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--muted)' }}>
+                              {eventDate.toLocaleDateString('en', { month: 'short' })}</span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 22, flex: '0 0 auto' }}>📌</span>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <b style={{ fontSize: 13.5, fontWeight: 700, display: 'block' }}>{n.title}</b>
+                          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                            {eventDate && n.eventTime && `${n.eventTime} · `}
+                            {n.createdByName || dept}
+                            {expiresAt && ` · Till ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
+                          </div>
+                          {n.description && (
+                            <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 4,
+                              maxHeight: 36, overflow: 'hidden', lineHeight: 1.4 }}
+                              dangerouslySetInnerHTML={{ __html: n.description }} />
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <span className={`badge ${isPast ? 'b-grey' : 'b-green'}`} style={{ fontSize: 10, alignSelf: 'center' }}>
-                      {isPast ? 'Past' : 'Upcoming'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       </div>
 
