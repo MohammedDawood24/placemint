@@ -161,59 +161,40 @@ export default function StudentDashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* Virtual Notice Board */}
-      <div className="card p" style={{ marginBottom: 20 }}>
-        <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('noticeboard')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 20 }}>📌</span>
-            <div>
-              <h3>Virtual Notice Board</h3>
-              <div className="sub">{activeNotices.length} active notice{activeNotices.length !== 1 ? 's' : ''} from {student?.department || 'your department'}</div>
-            </div>
-          </div>
+      {/* My applications — full width */}
+      <div className="card p" style={{ marginBottom: 16 }}>
+        <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('applications')}>
+          <h3>My applications</h3>
           <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
         </div>
-        {activeNotices.length === 0 ? (
-          <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-            <div style={{ fontSize: 30, marginBottom: 8 }}>📌</div>
-            No active notices from your department right now. Check back later.
+        {myApps.filter(a => a.status === 'active').length === 0 ? (
+          <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+            {pct < 100 ? 'Complete your profile to start applying.' : 'No applications yet. Check Open Drives.'}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {activeNotices.slice(0, 4).map(n => {
-              const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : n.eventDate ? new Date(n.eventDate) : null
-              const expiresAt = n.expiresAt?.seconds ? new Date(n.expiresAt.seconds * 1000) : null
+            {myApps.filter(a => a.status === 'active').map(a => {
+              const job = jobs.find(j => j.id === a.jobId) || {}
               return (
-                <div key={n.id} onClick={() => onNavigate?.('noticeboard')}
-                  style={{ display: 'flex', gap: 12, padding: '14px 16px', cursor: 'pointer',
-                  background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)', transition: '.15s' }}
+                <div key={a.id} onClick={() => onNavigate?.('applications')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+                  padding: '12px 14px', background: a.stage >= 6 ? 'var(--green-soft)' : '#fafbff',
+                  borderRadius: 10, border: '1px solid var(--line)', transition: '.15s' }}
                   onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
                   onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
-                  {eventDate ? (
-                    <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--indigo-soft)',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      flex: '0 0 auto' }}>
-                      <b style={{ fontSize: 16, fontWeight: 700, color: 'var(--indigo-d)', lineHeight: 1 }}>
-                        {eventDate.getDate()}</b>
-                      <span style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--muted)' }}>
-                        {eventDate.toLocaleDateString('en', { month: 'short' })}</span>
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: 22, flex: '0 0 auto', marginTop: 1 }}>📌</span>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <b style={{ fontSize: 14, fontWeight: 700, display: 'block', marginBottom: 3 }}>{n.title}</b>
-                    {n.description && (
-                      <div style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5,
-                        maxHeight: 40, overflow: 'hidden' }}
-                        dangerouslySetInnerHTML={{ __html: n.description }} />
-                    )}
-                    <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                      {eventDate && n.eventTime && <span>⏰ {n.eventTime}</span>}
-                      {n.createdByName && <span>By {n.createdByName}</span>}
-                      {expiresAt && <span>Till {expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: '#4C5BD4',
+                    display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff',
+                    fontSize: 15, flex: '0 0 auto' }}>{(job.companyName || '?')[0]}</div>
+                  <div style={{ flex: 1 }}>
+                    <b style={{ fontSize: 13.5, fontWeight: 600, display: 'block' }}>{job.role || 'Unknown'}</b>
+                    <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+                      {job.companyName}{job.package ? ` · ₹${job.package}` : ''}
                     </div>
                   </div>
+                  <span className={`badge ${a.stage >= 6 ? 'b-green' : a.stage >= 4 ? 'b-gold' : 'b-indigo'}`}
+                    style={{ fontSize: 11 }}>
+                    {a.stage >= 6 && Icons.cap} {STAGES[a.stage] || 'Applied'}
+                  </span>
                 </div>
               )
             })}
@@ -221,58 +202,13 @@ export default function StudentDashboard({ onNavigate }) {
         )}
       </div>
 
-      {/* Applications and drives */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
-        {/* Active applications */}
-        <div className="card p">
-          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('applications')}>
-            <h3>My applications</h3>
-            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>
-              View all →
-            </span>
-          </div>
-          {myApps.filter(a => a.status === 'active').length === 0 ? (
-            <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-              {pct < 100 ? 'Complete your profile to start applying.' : 'No applications yet. Check Open Drives.'}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {myApps.filter(a => a.status === 'active').map(a => {
-                const job = jobs.find(j => j.id === a.jobId) || {}
-                return (
-                  <div key={a.id} onClick={() => onNavigate?.('applications')}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
-                    padding: '12px 14px', background: a.stage >= 6 ? 'var(--green-soft)' : '#fafbff',
-                    borderRadius: 10, border: '1px solid var(--line)', transition: '.15s' }}
-                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
-                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: '#4C5BD4',
-                      display: 'grid', placeItems: 'center', fontWeight: 700, color: '#fff',
-                      fontSize: 15, flex: '0 0 auto' }}>{(job.companyName || '?')[0]}</div>
-                    <div style={{ flex: 1 }}>
-                      <b style={{ fontSize: 13.5, fontWeight: 600, display: 'block' }}>{job.role || 'Unknown'}</b>
-                      <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                        {job.companyName}{job.package ? ` · ₹${job.package}` : ''}
-                      </div>
-                    </div>
-                    <span className={`badge ${a.stage >= 6 ? 'b-green' : a.stage >= 4 ? 'b-gold' : 'b-indigo'}`}
-                      style={{ fontSize: 11 }}>
-                      {a.stage >= 6 && Icons.cap} {STAGES[a.stage] || 'Applied'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Eligible drives preview */}
+      {/* Open drives + Virtual Notice Board — side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Open drives */}
         <div className="card p">
           <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('jobs')}>
             <h3>Open drives</h3>
-            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>
-              View all →
-            </span>
+            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
           </div>
           {eligibleJobs.length === 0 ? (
             <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
@@ -315,6 +251,56 @@ export default function StudentDashboard({ onNavigate }) {
                   +{eligibleJobs.length - 5} more drives available
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Virtual Notice Board */}
+        <div className="card p">
+          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('noticeboard')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>📌</span>
+              <h3>Virtual Notice Board</h3>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
+          </div>
+          {activeNotices.length === 0 ? (
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>📌</div>
+              No active notices from {student?.department || 'your department'} right now.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {activeNotices.slice(0, 4).map(n => {
+                const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : n.eventDate ? new Date(n.eventDate) : null
+                return (
+                  <div key={n.id} onClick={() => onNavigate?.('noticeboard')}
+                    style={{ display: 'flex', gap: 10, padding: '10px 12px', cursor: 'pointer',
+                    background: '#fafbff', borderRadius: 10, border: '1px solid var(--line)', transition: '.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--indigo)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--line)'}>
+                    {eventDate ? (
+                      <div style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--indigo-soft)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        flex: '0 0 auto' }}>
+                        <b style={{ fontSize: 14, fontWeight: 700, color: 'var(--indigo-d)', lineHeight: 1 }}>
+                          {eventDate.getDate()}</b>
+                        <span style={{ fontSize: 8, textTransform: 'uppercase', color: 'var(--muted)' }}>
+                          {eventDate.toLocaleDateString('en', { month: 'short' })}</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 18, flex: '0 0 auto' }}>📌</span>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b style={{ fontSize: 13, fontWeight: 600, display: 'block' }}>{n.title}</b>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                        {eventDate && n.eventTime && `⏰ ${n.eventTime} · `}
+                        {n.createdByName || student?.department}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
