@@ -135,6 +135,7 @@ const SCREENS = {
     dash: StudentDashboard,
     jobs: StudentJobs,
     applications: StudentApplications,
+    noticeboard: StudentNoticeBoard,
     profile: StudentProfile,
   },
 }
