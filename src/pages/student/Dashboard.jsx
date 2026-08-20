@@ -161,19 +161,24 @@ export default function StudentDashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* Active notices from department */}
-      {activeNotices.length > 0 && (
-        <div className="card p" style={{ marginBottom: 20 }}>
-          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('noticeboard')}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>📌</span>
-              <div>
-                <h3>Virtual Notice Board</h3>
-                <div className="sub">{activeNotices.length} active notice{activeNotices.length !== 1 ? 's' : ''} from {student?.department || 'your department'}</div>
-              </div>
+      {/* Virtual Notice Board */}
+      <div className="card p" style={{ marginBottom: 20 }}>
+        <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => onNavigate?.('noticeboard')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20 }}>📌</span>
+            <div>
+              <h3>Virtual Notice Board</h3>
+              <div className="sub">{activeNotices.length} active notice{activeNotices.length !== 1 ? 's' : ''} from {student?.department || 'your department'}</div>
             </div>
-            <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
           </div>
+          <span style={{ fontSize: 12, color: 'var(--indigo)', fontWeight: 600 }}>View all →</span>
+        </div>
+        {activeNotices.length === 0 ? (
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+            <div style={{ fontSize: 30, marginBottom: 8 }}>📌</div>
+            No active notices from your department right now. Check back later.
+          </div>
+        ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {activeNotices.slice(0, 4).map(n => {
               const eventDate = n.eventDate?.seconds ? new Date(n.eventDate.seconds * 1000) : n.eventDate ? new Date(n.eventDate) : null
@@ -213,8 +218,8 @@ export default function StudentDashboard({ onNavigate }) {
               )
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Applications and drives */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
